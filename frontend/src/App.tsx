@@ -33,8 +33,8 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🍷 Wine One Word</h1>
-        <p>ワインの感想を一言で！</p>
+        <h1>Wine One Word</h1>
+        <p>ワインの感想を「飲みやすい」以外の一言で！</p>
       </header>
       
       <main className="App-main">
