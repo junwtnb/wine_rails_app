@@ -1,8 +1,9 @@
 .App {
   text-align: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 .App-header {
@@ -12,14 +13,16 @@
 .App-header h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  color: #fff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #1a1a1a;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 .App-header p {
   font-size: 1.2rem;
-  opacity: 0.9;
+  color: #666;
   margin: 0;
+  font-weight: 300;
 }
 
 .App-main {
@@ -30,11 +33,12 @@
 
 /* Wine Search Form */
 .wine-search-form {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 2rem;
-  backdrop-filter: blur(10px);
+  background: #f8f8f8;
+  border-radius: 16px;
+  padding: 3rem;
   margin-bottom: 2rem;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .search-mode-toggle {
@@ -46,22 +50,32 @@
 
 .mode-btn {
   padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 25px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 24px;
+  background: #ffffff;
+  color: #666;
   cursor: pointer;
   font-size: 1rem;
   transition: all 0.3s ease;
+  font-weight: 400;
 }
 
 .mode-btn.active {
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .mode-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+  color: #1a1a1a;
+}
+
+.mode-btn.active:hover {
+  background: #1a1a1a;
+  color: #ffffff;
 }
 
 .search-form {
@@ -76,19 +90,26 @@
 }
 
 .search-input {
-  padding: 1rem;
-  border: none;
+  padding: 1rem 1.5rem;
+  border: 1px solid #d0d0d0;
   border-radius: 50px;
   font-size: 1rem;
   width: 100%;
   max-width: 400px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
+  background: #ffffff;
+  color: #1a1a1a;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 
 .search-input::placeholder {
-  color: #666;
+  color: #999;
   text-align: center;
 }
 
@@ -107,18 +128,19 @@
   padding: 1rem 2rem;
   border: none;
   border-radius: 50px;
-  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+  background: #1a1a1a;
   color: white;
   font-size: 1.1rem;
-  font-weight: bold;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .search-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .search-btn:disabled {
@@ -136,24 +158,23 @@
 /* Loading and Error */
 .loading {
   font-size: 1.2rem;
-  color: #fff;
-  opacity: 0.8;
+  color: #666;
   margin: 2rem 0;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.8; }
+  0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
 .error {
-  background: rgba(255, 0, 0, 0.2);
-  color: #ffcccb;
+  background: #ffeaea;
+  color: #d32f2f;
   padding: 1rem;
   border-radius: 10px;
   margin: 1rem 0;
-  border: 1px solid rgba(255, 0, 0, 0.3);
+  border: 1px solid #ffcdd2;
 }
 
 /* Wine Result */
@@ -162,11 +183,11 @@
 }
 
 .result-card {
-  background: rgba(255, 255, 255, 0.15);
+  background: #ffffff;
   border-radius: 20px;
   padding: 3rem 2rem;
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   animation: fadeInUp 0.6s ease-out;
 }
 
@@ -183,23 +204,23 @@
 
 .description-word {
   font-size: 3rem;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 300;
+  color: #1a1a1a;
   margin-bottom: 1rem;
-  font-family: serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  letter-spacing: -0.02em;
 }
 
 .wine-name {
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #333;
   margin-bottom: 1rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .result-message {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #666;
   margin-bottom: 1.5rem;
 }
 
