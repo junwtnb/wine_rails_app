@@ -8,7 +8,7 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     namespace :v1 do
-      resources :wines, only: [:show, :index] do
+      resources :wines, only: [:show, :index, :create] do
         collection do
           post :search_by_name
         end

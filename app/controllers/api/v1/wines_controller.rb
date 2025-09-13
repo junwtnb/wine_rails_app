@@ -11,6 +11,22 @@ class Api::V1::WinesController < ApplicationController
     render json: { error: 'ワインが見つかりません' }, status: :not_found
   end
 
+  def create
+    wine = Wine.new(wine_params)
+    
+    if wine.save
+      render json: { 
+        wine: wine,
+        message: "ワインの感想を追加しました" 
+      }, status: :created
+    else
+      render json: { 
+        errors: wine.errors.full_messages,
+        message: "追加に失敗しました"
+      }, status: :unprocessable_entity
+    end
+  end
+
   def search_by_name
     query = params[:query]
     return render json: { error: '検索クエリが必要です' }, status: :bad_request if query.blank?
@@ -35,6 +51,10 @@ class Api::V1::WinesController < ApplicationController
   end
 
   private
+
+  def wine_params
+    params.require(:wine).permit(:name, :description_word)
+  end
 
   def generate_description_from_name(wine_name)
     # 名前から特徴を推測して感想を生成
