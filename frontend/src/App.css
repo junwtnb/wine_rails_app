@@ -227,6 +227,12 @@
   font-weight: 400;
 }
 
+.wine-vintage {
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: 300;
+}
+
 .result-message {
   font-size: 1.1rem;
   color: #666;

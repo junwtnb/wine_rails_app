@@ -44,16 +44,47 @@ class Api::V1::WinesController < ApplicationController
         }
       }
     else
-      # 複数ヒットした場合は最初の結果を返す
-      wine = wines.first
-      render json: { wine: wine }
+      # 複数ヒットした場合は最新ヴィンテージを優先的に返す
+      wine = wines.order(vtg: :desc, created_at: :desc).first
+      # ヴィンテージに応じた感想を生成
+      enhanced_description = enhance_description_with_vintage(wine)
+      render json: { 
+        wine: {
+          name: wine.name,
+          description_word: enhanced_description,
+          vtg: wine.vtg,
+          message: wine.vtg ? "データベースから見つかりました（#{wine.vtg}年）" : "データベースから見つかりました"
+        }
+      }
     end
   end
 
   private
 
   def wine_params
-    params.require(:wine).permit(:name, :description_word)
+    params.require(:wine).permit(:name, :description_word, :vtg)
+  end
+
+  def enhance_description_with_vintage(wine)
+    base_description = wine.description_word
+    vintage_category = wine.vintage_category
+    
+    return base_description if vintage_category.nil?
+    
+    case vintage_category
+    when :very_recent
+      "フレッシュな#{base_description}"
+    when :recent
+      "若々しい#{base_description}"
+    when :mature
+      "熟成した#{base_description}"
+    when :aged
+      "円熟の#{base_description}"
+    when :vintage
+      "歴史ある#{base_description}"
+    else
+      base_description
+    end
   end
 
   def generate_description_from_name(wine_name)

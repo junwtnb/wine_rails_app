@@ -18,6 +18,7 @@ const WineResult: React.FC<WineResultProps> = ({ result }) => {
         {wine.name && (
           <div className="wine-name">
             {wine.name}
+            {wine.vtg && <span className="wine-vintage"> ({wine.vtg}年)</span>}
           </div>
         )}
         

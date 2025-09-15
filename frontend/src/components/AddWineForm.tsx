@@ -13,6 +13,7 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
 }) => {
   const [wineName, setWineName] = useState('');
   const [descriptionWord, setDescriptionWord] = useState('');
+  const [vtg, setVtg] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +33,8 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
         body: JSON.stringify({
           wine: {
             name: wineName,
-            description_word: descriptionWord
+            description_word: descriptionWord,
+            vtg: vtg ? parseInt(vtg) : null
           }
         }),
       });
@@ -45,6 +47,7 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
       onSuccess(data.message);
       setWineName('');
       setDescriptionWord('');
+      setVtg('');
     } catch (error) {
       onError(error instanceof Error ? error.message : '追加エラーが発生しました');
     } finally {
@@ -70,6 +73,15 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
             onChange={(e) => setDescriptionWord(e.target.value)}
             placeholder="感想を一言で入力してください（例: 芳醇、爽やか、エレガント）"
             className="search-input"
+          />
+          <input
+            type="number"
+            value={vtg}
+            onChange={(e) => setVtg(e.target.value)}
+            placeholder="ヴィンテージ（年）を入力してください（例: 2023）"
+            className="search-input"
+            min="1900"
+            max="2030"
           />
           <button type="submit" className="search-btn">
             感想を追加

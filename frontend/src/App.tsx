@@ -8,6 +8,7 @@ export interface WineResponse {
   wine: {
     name?: string;
     description_word: string;
+    vtg?: number;
     message: string;
   };
 }
