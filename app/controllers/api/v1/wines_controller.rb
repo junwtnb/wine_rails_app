@@ -96,17 +96,19 @@ class Api::V1::WinesController < ApplicationController
       ["威厳", "格調", "堂々", "風格"].sample
     when /burgundy|bourgogne|ブルゴーニュ/
       ["繊細", "優雅", "魅惑", "官能"].sample
-    when /champagne|シャンパーニュ|dom.?perignon|ドンペリ/
+    when /champagne|シャンパーニュ|dom.?perignon|ドン[・]?ペリ/
       ["華麗", "祝祭", "きらめき", "泡立ち"].sample
     when /chablis|シャブリ/
       ["凛とした", "透明感", "ミネラル", "清澄"].sample
     when /chianti|barolo|brunello|キャンティ|バローロ/
       ["陽気", "情熱", "力強い", "躍動"].sample
-    when /riesling|gewurztraminer|リースリング/
+    when /riesling|gewurztraminer|リースリング|ゲヴュルツ[・]?トラミネール/
       ["爽やか", "香り高い", "軽快", "フルーティ"].sample
-    when /pinot.?noir|ピノノワール/
+    when /pinot.?noir|ピノ[・]?ノワール/
       ["エレガント", "繊細", "上品", "洗練"].sample
-    when /cabernet|カベルネ/
+    when /pinot.?gris|pinot.?grigio|ピノ[・]?グリ|ピノグリージョ/
+      ["さっぱり", "ドライ", "洗練", "すっきり"].sample
+    when /cabernet|カベルネ[・]?ソーヴィニヨン|カベルネ/
       ["重厚", "濃厚", "パワフル", "骨格"].sample
     when /chardonnay|シャルドネ/
       ["まろやか", "クリーミー", "豊潤", "バランス"].sample
