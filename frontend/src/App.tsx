@@ -10,6 +10,7 @@ export interface WineResponse {
     description_word: string;
     vtg?: number;
     message: string;
+    wine_type?: string;
   };
 }
 

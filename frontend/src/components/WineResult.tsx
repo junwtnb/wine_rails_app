@@ -8,25 +8,36 @@ interface WineResultProps {
 const WineResult: React.FC<WineResultProps> = ({ result }) => {
   const { wine } = result;
 
+  const getWineEmoji = (wineType: string) => {
+    switch (wineType?.toLowerCase()) {
+      case 'white':
+        return '🥂';
+      case 'sparkling':
+        return '🍾';
+      default:
+        return '🍷';
+    }
+  };
+
   return (
     <div className="wine-result">
       <div className="result-card">
         <div className="description-word">
           "{wine.description_word}"
         </div>
-        
+
         {wine.name && (
           <div className="wine-name">
             {wine.name}
             {wine.vtg && <span className="wine-vintage"> ({wine.vtg}年)</span>}
           </div>
         )}
-        
+
         <div className="result-message">
           {wine.message}
         </div>
-        
-        <div className="wine-emoji">🍷</div>
+
+        <div className="wine-emoji">{getWineEmoji(wine.wine_type || '')}</div>
       </div>
     </div>
   );
