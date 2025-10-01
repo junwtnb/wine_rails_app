@@ -120,6 +120,32 @@ class Api::V1::WinesController < ApplicationController
       ["深い", "芳醇", "コクのある", "温かい"].sample
     when /white|白/
       ["爽やか", "すっきり", "清らか", "軽やか"].sample
+    # フランス地名
+    when /savigny|savigny.les.beaune|サヴィニー[・]?レ[・]?ボーヌ/
+      ["エレガント", "繊細", "気品", "洗練"].sample
+    when /gevrey.chambertin|ジュヴレ[・]?シャンベルタン/
+      ["力強い", "威厳", "堂々", "深遠"].sample
+    when /chassagne.montrachet|シャサーニュ[・]?モンラッシェ/
+      ["気高い", "複雑", "豊潤", "格調"].sample
+    when /mercurey|メルキュレ/
+      ["バランス", "上品", "調和", "優美"].sample
+    when /alsace|アルザス/
+      ["フルーティ", "アロマティック", "華やか", "香り豊か"].sample
+    # 国名
+    when /france|フランス/
+      ["エレガント", "洗練", "気品", "伝統"].sample
+    when /italy|italia|イタリア/
+      ["陽気", "情熱", "温かい", "親しみやすい"].sample
+    when /spain|españa|スペイン/
+      ["力強い", "情熱的", "太陽の恵み", "豊潤"].sample
+    when /germany|ドイツ/
+      ["精密", "繊細", "ミネラル", "クリア"].sample
+    when /california|カリフォルニア/
+      ["陽光", "豊か", "モダン", "果実味"].sample
+    when /australia|オーストラリア/
+      ["パワフル", "フレッシュ", "躍動感", "新世界"].sample
+    when /chile|チリ/
+      ["コスパ", "親しみやすい", "フルーティ", "カジュアル"].sample
     else
       ["個性的", "ユニーク", "印象的", "魅力的", "特別", "心地よい"].sample
     end
