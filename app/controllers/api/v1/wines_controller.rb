@@ -112,14 +112,22 @@ class Api::V1::WinesController < ApplicationController
       ["重厚", "濃厚", "パワフル", "骨格"].sample
     when /chardonnay|シャルドネ/
       ["まろやか", "クリーミー", "豊潤", "バランス"].sample
-    when /rose|ロゼ/
-      ["可憐", "桜色", "春めく", "ロマンチック"].sample
     when /sparkling|スパークリング/
       ["弾ける", "喜び", "躍る", "爽快"].sample
-    when /red|赤/
+    when /red|赤|rouge|ルージュ/
       ["深い", "芳醇", "コクのある", "温かい"].sample
-    when /white|白/
+    when /white|白|blanc|ブラン/
       ["爽やか", "すっきり", "清らか", "軽やか"].sample
+    when /rosé|ロゼ/
+      ["可憐", "桜色", "春めく", "ロマンチック"].sample
+    when /mousseux|ムスー|crémant|クレマン/
+      ["弾ける", "軽やか", "泡立ち", "爽快"].sample
+    when /sec|セック/
+      ["ドライ", "キレ", "すっきり", "辛口"].sample
+    when /doux|ドゥー|moelleux|モワルー/
+      ["甘美", "まろやか", "蜜のような", "甘口"].sample
+    when /millésime|ミレジム/
+      ["ヴィンテージ", "年代物", "熟成", "貴重"].sample
     # フランス地名
     when /savigny|savigny.les.beaune|サヴィニー[・]?レ[・]?ボーヌ/
       ["エレガント", "繊細", "気品", "洗練"].sample
