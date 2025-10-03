@@ -154,6 +154,8 @@ class Api::V1::WinesController < ApplicationController
       ["パワフル", "フレッシュ", "躍動感", "新世界"].sample
     when /chile|チリ/
       ["コスパ", "親しみやすい", "フルーティ", "カジュアル"].sample
+    when /argentina|アルゼンチン/
+      ["情熱", "濃厚", "力強い", "ダイナミック"].sample
     else
       ["個性的", "ユニーク", "印象的", "魅力的", "特別", "心地よい"].sample
     end
