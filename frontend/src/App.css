@@ -25,10 +25,65 @@
   font-weight: 300;
 }
 
+.usage-guide {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  max-width: 350px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.usage-toggle {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+  font-weight: 300;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.3rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.usage-toggle:hover {
+  background-color: #f0f0f0;
+}
+
+.usage-content {
+  margin-top: 1rem;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.usage-guide p {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 0 0.8rem 0;
+  line-height: 1.6;
+}
+
+.usage-guide small {
+  font-size: 0.9rem;
+  color: #777;
+  font-style: italic;
+}
+
 .App-main {
   padding: 2rem;
   max-width: 600px;
   margin: 0 auto;
+}
+
+.App-footer {
+  padding: 2rem;
+  margin-top: 3rem;
 }
 
 /* Wine Search Form */

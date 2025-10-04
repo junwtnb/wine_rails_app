@@ -20,6 +20,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showUsageGuide, setShowUsageGuide] = useState(false);
 
   const handleSearchResult = (result: WineResponse) => {
     setWineResult(result);
@@ -89,6 +90,25 @@ function App() {
           </button>
         )}
       </main>
+
+      <footer className="App-footer">
+        <div className="usage-guide">
+          <h3
+            className="usage-toggle"
+            onClick={() => setShowUsageGuide(!showUsageGuide)}
+          >
+            こんなときにつかってください {showUsageGuide ? '▲' : '▼'}
+          </h3>
+          {showUsageGuide && (
+            <div className="usage-content">
+              <p>ワインの感想を求められたけれど、<br/>
+                うまく言えない...<br/>
+              </p>
+              <small>「赤」「シャルドネ」「フランス」など、知ってることを何でも入力してみてください</small>
+            </div>
+          )}
+        </div>
+      </footer>
     </div>
   );
 }
