@@ -294,6 +294,24 @@
   margin-bottom: 1.5rem;
 }
 
+.generic-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.generic-note {
+  font-size: 0.9rem;
+  color: #856404;
+  margin-top: 0.8rem;
+  font-style: italic;
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #ffd93d;
+}
+
 .wine-emoji {
   font-size: 4rem;
   margin-top: 1rem;

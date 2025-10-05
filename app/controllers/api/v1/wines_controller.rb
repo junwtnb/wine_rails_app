@@ -35,12 +35,19 @@ class Api::V1::WinesController < ApplicationController
     
     if wines.empty?
       # 検索でヒットしなかった場合、新しい感想を生成
-      description_word = generate_description_from_name(query)
-      render json: { 
+      description_word, is_generic = generate_description_from_name(query)
+      message = if is_generic
+        "データベースにないワインですが、汎用的な感想を生成しました"
+      else
+        "データベースにないワインですが、感想を生成しました"
+      end
+
+      render json: {
         wine: {
           name: query,
           description_word: description_word,
-          message: "データベースにないワインですが、感想を生成しました"
+          message: message,
+          is_generic: is_generic
         }
       }
     else
@@ -90,8 +97,9 @@ class Api::V1::WinesController < ApplicationController
   def generate_description_from_name(wine_name)
     # 名前から特徴を推測して感想を生成
     name_lower = wine_name.downcase
-    
-    case name_lower
+    is_generic = false
+
+    description = case name_lower
     when /bordeaux|margaux|medoc|ボルドー|マルゴー/
       ["威厳", "格調", "堂々", "風格"].sample
     when /burgundy|bourgogne|ブルゴーニュ/
@@ -157,7 +165,10 @@ class Api::V1::WinesController < ApplicationController
     when /argentina|アルゼンチン/
       ["情熱", "濃厚", "力強い", "ダイナミック"].sample
     else
+      is_generic = true
       ["個性的", "ユニーク", "印象的", "魅力的", "特別", "心地よい"].sample
     end
+
+    [description, is_generic]
   end
 end

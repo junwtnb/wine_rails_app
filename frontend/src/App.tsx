@@ -11,6 +11,7 @@ export interface WineResponse {
     vtg?: number;
     message: string;
     wine_type?: string;
+    is_generic?: boolean;
   };
 }
 
