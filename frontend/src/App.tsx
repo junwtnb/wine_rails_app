@@ -4,6 +4,7 @@ import WineSearchForm from './components/WineSearchForm';
 import WineResult from './components/WineResult';
 import AddWineForm from './components/AddWineForm';
 import WineList from './components/WineList';
+import HamburgerMenu from './components/HamburgerMenu';
 
 export interface WineResponse {
   wine: {
@@ -55,8 +56,16 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Wine One Word</h1>
-        <p>ワインの感想を「飲みやすい」以外の一言で！</p>
+        <div className="header-content">
+          <HamburgerMenu
+            onShowWineList={() => setShowWineList(true)}
+            onShowAddForm={() => setShowAddForm(true)}
+          />
+          <div className="header-text">
+            <h1>Wine One Word</h1>
+            <p>ワインの感想を「飲みやすい」以外の一言で！</p>
+          </div>
+        </div>
       </header>
       
       <main className="App-main">
@@ -84,22 +93,6 @@ function App() {
           />
         )}
         
-        {!showAddForm && (
-          <div className="action-buttons">
-            <button
-              className="add-wine-btn"
-              onClick={() => setShowAddForm(true)}
-            >
-              感想を追加
-            </button>
-            <button
-              className="wine-list-btn"
-              onClick={() => setShowWineList(true)}
-            >
-              レビュー一覧
-            </button>
-          </div>
-        )}
       </main>
 
       <footer className="App-footer">
