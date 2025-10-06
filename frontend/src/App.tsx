@@ -3,6 +3,7 @@ import './App.css';
 import WineSearchForm from './components/WineSearchForm';
 import WineResult from './components/WineResult';
 import AddWineForm from './components/AddWineForm';
+import WineList from './components/WineList';
 
 export interface WineResponse {
   wine: {
@@ -22,6 +23,7 @@ function App() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
+  const [showWineList, setShowWineList] = useState(false);
 
   const handleSearchResult = (result: WineResponse) => {
     setWineResult(result);
@@ -83,12 +85,20 @@ function App() {
         )}
         
         {!showAddForm && (
-          <button 
-            className="add-wine-btn"
-            onClick={() => setShowAddForm(true)}
-          >
-            感想を追加
-          </button>
+          <div className="action-buttons">
+            <button
+              className="add-wine-btn"
+              onClick={() => setShowAddForm(true)}
+            >
+              感想を追加
+            </button>
+            <button
+              className="wine-list-btn"
+              onClick={() => setShowWineList(true)}
+            >
+              レビュー一覧
+            </button>
+          </div>
         )}
       </main>
 
@@ -110,6 +120,10 @@ function App() {
           )}
         </div>
       </footer>
+
+      {showWineList && (
+        <WineList onClose={() => setShowWineList(false)} />
+      )}
     </div>
   );
 }
