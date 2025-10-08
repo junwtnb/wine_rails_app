@@ -12,14 +12,23 @@
 
 .header-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   max-width: 800px;
   margin: 0 auto;
+  position: relative;
+  min-height: 60px;
 }
 
 .header-text {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 100%;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .App-header h1 {
@@ -514,6 +523,7 @@
 /* Hamburger Menu */
 .hamburger-menu {
   position: relative;
+  z-index: 1000;
 }
 
 .hamburger-button {
