@@ -73,6 +73,7 @@ function App() {
           onResult={handleSearchResult}
           onError={handleError}
           onLoadingChange={handleLoadingChange}
+          isLoading={isLoading}
         />
         
         {isLoading && <div className="loading">検索中...</div>}

@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { WineResponse } from '../App';
+import Spinner from './Spinner';
 
 interface WineSearchFormProps {
   onResult: (result: WineResponse) => void;
   onError: (error: string) => void;
   onLoadingChange: (loading: boolean) => void;
+  isLoading: boolean;
 }
 
 const WineSearchForm: React.FC<WineSearchFormProps> = ({
   onResult,
   onError,
   onLoadingChange,
+  isLoading,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -108,8 +111,15 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
               placeholder="ワイン名を入力してください（例: Bordeaux, Chardonnay）"
               className="search-input"
             />
-            <button type="submit" className="search-btn">
-              感想を聞く
+            <button type="submit" className="search-btn" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Spinner size="small" color="white" />
+                  <span>検索中...</span>
+                </>
+              ) : (
+                '感想を聞く'
+              )}
             </button>
           </div>
         </form>
@@ -122,8 +132,15 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
               onChange={handleFileSelect}
               className="file-input"
             />
-            <button type="submit" disabled={!selectedFile} className="search-btn">
-              画像を分析する
+            <button type="submit" disabled={!selectedFile || isLoading} className="search-btn">
+              {isLoading ? (
+                <>
+                  <Spinner size="small" color="white" />
+                  <span>分析中...</span>
+                </>
+              ) : (
+                '画像を分析する'
+              )}
             </button>
           </div>
           {selectedFile && (
