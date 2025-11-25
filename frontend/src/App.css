@@ -265,6 +265,14 @@
 /* Wine Result */
 .wine-result {
   margin-top: 2rem;
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wine-result.fade-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .result-card {
@@ -273,7 +281,39 @@
   padding: 3rem 2rem;
   border: 1px solid #e8e8e8;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  animation: fadeInUp 0.6s ease-out;
+}
+
+.wine-result .description-word,
+.wine-result .wine-name,
+.wine-result .result-message,
+.wine-result .wine-emoji {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wine-result.fade-in .description-word {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.1s;
+}
+
+.wine-result.fade-in .wine-name {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.2s;
+}
+
+.wine-result.fade-in .result-message {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.3s;
+}
+
+.wine-result.fade-in .wine-emoji {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.4s;
 }
 
 @keyframes fadeInUp {

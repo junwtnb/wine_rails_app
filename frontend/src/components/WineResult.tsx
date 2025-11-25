@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WineResponse } from '../App';
 
 interface WineResultProps {
@@ -7,6 +7,16 @@ interface WineResultProps {
 
 const WineResult: React.FC<WineResultProps> = ({ result }) => {
   const { wine } = result;
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // コンポーネントがマウントされたら少し遅れてアニメーションを開始
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [result]);
 
   const getWineEmoji = (wineType: string) => {
     switch (wineType?.toLowerCase()) {
@@ -20,7 +30,7 @@ const WineResult: React.FC<WineResultProps> = ({ result }) => {
   };
 
   return (
-    <div className="wine-result">
+    <div className={`wine-result ${isVisible ? 'fade-in' : ''}`}>
       <div className="result-card">
         <div className="description-word">
           "{wine.description_word}"
