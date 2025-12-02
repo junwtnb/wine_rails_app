@@ -21,7 +21,10 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
 
   const handleNameSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      onError('何か入力してください😊 例: 「シャルドネ」「赤ワイン」「フランス」など、知っていることなら何でも大丈夫です！');
+      return;
+    }
 
     onLoadingChange(true);
     
@@ -49,7 +52,10 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
 
   const handleImageSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      onError('画像を選択してください📷 ワインボトルやラベルの写真をアップロードしてくださいね！');
+      return;
+    }
 
     onLoadingChange(true);
     
