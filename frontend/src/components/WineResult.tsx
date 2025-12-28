@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WineResponse } from '../App';
+import WineMap from './WineMap';
 
 interface WineResultProps {
   result: WineResponse;
@@ -53,6 +54,12 @@ const WineResult: React.FC<WineResultProps> = ({ result }) => {
         </div>
 
         <div className="wine-emoji">{getWineEmoji(wine.wine_type || '')}</div>
+
+        {wine.region && (
+          <div className="wine-region-section">
+            <WineMap region={wine.region} />
+          </div>
+        )}
       </div>
     </div>
   );

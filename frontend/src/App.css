@@ -799,3 +799,86 @@
     font-size: 1.3rem;
   }
 }
+
+/* Wine Map Styles */
+.wine-region-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.wine-map {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: all 0.3s ease;
+}
+
+.wine-map h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.wine-map .country {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+.wine-map .region-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 1rem 0;
+  font-style: italic;
+}
+
+.map-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.map-container svg {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  max-width: 100%;
+  height: auto;
+}
+
+.region-marker {
+  animation: pulse 2s infinite;
+  cursor: pointer;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    r: 8;
+  }
+  50% {
+    opacity: 0.7;
+    r: 12;
+  }
+  100% {
+    opacity: 1;
+    r: 8;
+  }
+}
+
+.region-label {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.wine-map.no-region {
+  text-align: center;
+}
+
+.wine-map.no-region .region-info {
+  padding: 1rem 0;
+}

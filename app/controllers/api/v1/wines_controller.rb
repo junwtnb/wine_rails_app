@@ -32,10 +32,11 @@ class Api::V1::WinesController < ApplicationController
     return render json: { error: '検索クエリが必要です' }, status: :bad_request if query.blank?
 
     wines = Wine.search_by_name(query)
-    
+
     if wines.empty?
       # 検索でヒットしなかった場合、新しい感想を生成
       description_word, is_generic = generate_description_from_name(query)
+      region_info = detect_wine_region(query)
       message = if is_generic
         "データベースにないワインですが、汎用的な感想を生成しました"
       else
@@ -47,7 +48,8 @@ class Api::V1::WinesController < ApplicationController
           name: query,
           description_word: description_word,
           message: message,
-          is_generic: is_generic
+          is_generic: is_generic,
+          region: region_info
         }
       }
     else
@@ -55,12 +57,14 @@ class Api::V1::WinesController < ApplicationController
       wine = wines.order(vtg: :desc, created_at: :desc).first
       # ヴィンテージに応じた感想を生成
       enhanced_description = enhance_description_with_vintage(wine)
-      render json: { 
+      region_info = detect_wine_region(wine.name || query)
+      render json: {
         wine: {
           name: wine.name,
           description_word: enhanced_description,
           vtg: wine.vtg,
-          message: wine.vtg ? "データベースから見つかりました（#{wine.vtg}年）" : "データベースから見つかりました"
+          message: wine.vtg ? "データベースから見つかりました（#{wine.vtg}年）" : "データベースから見つかりました",
+          region: region_info
         }
       }
     end
@@ -91,6 +95,99 @@ class Api::V1::WinesController < ApplicationController
       "歴史ある#{base_description}"
     else
       base_description
+    end
+  end
+
+  def detect_wine_region(wine_name)
+    name_lower = wine_name.downcase
+
+    case name_lower
+    when /bordeaux|margaux|medoc|saint.?estephe|pauillac|saint.?julien|ボルドー|マルゴー|メドック/
+      {
+        name: "ボルドー",
+        country: "フランス",
+        coordinates: { lat: 44.8378, lng: -0.5792 },
+        description: "世界最高級ワインの聖地"
+      }
+    when /burgundy|bourgogne|chablis|gevrey|chambertin|ブルゴーニュ|シャブリ/
+      {
+        name: "ブルゴーニュ",
+        country: "フランス",
+        coordinates: { lat: 47.0516, lng: 4.8555 },
+        description: "繊細で複雑な味わいの名産地"
+      }
+    when /champagne|reims|epernay|シャンパーニュ|ランス|エペルネ/
+      {
+        name: "シャンパーニュ",
+        country: "フランス",
+        coordinates: { lat: 49.0370, lng: 4.0432 },
+        description: "スパークリングワインの故郷"
+      }
+    when /loire|sancerre|muscadet|ロワール|サンセール/
+      {
+        name: "ロワール",
+        country: "フランス",
+        coordinates: { lat: 47.2383, lng: 1.0888 },
+        description: "川沿いの多様なワイン産地"
+      }
+    when /rhone|cotes.?du.?rhone|hermitage|ローヌ|エルミタージュ/
+      {
+        name: "ローヌ",
+        country: "フランス",
+        coordinates: { lat: 44.1867, lng: 4.8089 },
+        description: "力強い赤ワインの産地"
+      }
+    when /chianti|barolo|brunello|tuscany|キャンティ|バローロ|トスカーナ/
+      {
+        name: "トスカーナ/ピエモンテ",
+        country: "イタリア",
+        coordinates: { lat: 43.4643, lng: 11.8811 },
+        description: "イタリア最高峰ワインの故郷"
+      }
+    when /rioja|ribera|tempranillo|リオハ|テンプラニーロ/
+      {
+        name: "リオハ",
+        country: "スペイン",
+        coordinates: { lat: 42.4627, lng: -2.4451 },
+        description: "スペイン王室御用達の銘醸地"
+      }
+    when /napa|sonoma|california|ナパ|ソノマ|カリフォルニア/
+      {
+        name: "ナパバレー/ソノマ",
+        country: "アメリカ",
+        coordinates: { lat: 38.5025, lng: -122.2654 },
+        description: "アメリカワインの聖地"
+      }
+    when /mendoza|argentina|メンドーサ|アルゼンチン/
+      {
+        name: "メンドーサ",
+        country: "アルゼンチン",
+        coordinates: { lat: -32.8908, lng: -68.8272 },
+        description: "高地で育つマルベックの名産地"
+      }
+    when /chile|central.?valley|チリ|セントラルバレー/
+      {
+        name: "セントラルバレー",
+        country: "チリ",
+        coordinates: { lat: -34.1689, lng: -70.7416 },
+        description: "コストパフォーマンスに優れた産地"
+      }
+    when /australia|barossa|adelaide|オーストラリア|バロッサ/
+      {
+        name: "バロッサバレー",
+        country: "オーストラリア",
+        coordinates: { lat: -34.5598, lng: 138.9156 },
+        description: "力強いシラーズの故郷"
+      }
+    when /germany|mosel|rheingau|ドイツ|モーゼル|ラインガウ/
+      {
+        name: "モーゼル/ラインガウ",
+        country: "ドイツ",
+        coordinates: { lat: 49.9754, lng: 6.6499 },
+        description: "エレガントなリースリングの産地"
+      }
+    else
+      nil
     end
   end
 

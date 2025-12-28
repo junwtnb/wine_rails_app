@@ -27,7 +27,7 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
     }
 
     onLoadingChange(true);
-    
+
     try {
       const response = await fetch('http://localhost:3000/api/v1/wines/search_by_name', {
         method: 'POST',
@@ -58,7 +58,7 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
     }
 
     onLoadingChange(true);
-    
+
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);

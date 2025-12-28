@@ -6,6 +6,13 @@ import AddWineForm from './components/AddWineForm';
 import WineList from './components/WineList';
 import HamburgerMenu from './components/HamburgerMenu';
 
+export interface WineRegion {
+  name: string;
+  country: string;
+  coordinates?: { lat: number; lng: number } | null;
+  description: string;
+}
+
 export interface WineResponse {
   wine: {
     name?: string;
@@ -14,6 +21,7 @@ export interface WineResponse {
     message: string;
     wine_type?: string;
     is_generic?: boolean;
+    region?: WineRegion;
   };
 }
 
@@ -44,7 +52,6 @@ function App() {
     setSuccessMessage(message);
     setError(null);
     setShowAddForm(false);
-    // 3秒後にメッセージを消す
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
@@ -67,7 +74,7 @@ function App() {
           </div>
         </div>
       </header>
-      
+
       <main className="App-main">
         <WineSearchForm
           onResult={handleSearchResult}
@@ -75,17 +82,17 @@ function App() {
           onLoadingChange={handleLoadingChange}
           isLoading={isLoading}
         />
-        
+
         {isLoading && <div className="loading">検索中...</div>}
-        
+
         {error && <div className="error">{error}</div>}
-        
+
         {successMessage && <div className="success">{successMessage}</div>}
-        
+
         {wineResult && !isLoading && (
           <WineResult result={wineResult} />
         )}
-        
+
         {showAddForm && (
           <AddWineForm
             onSuccess={handleAddSuccess}
@@ -93,7 +100,6 @@ function App() {
             onLoadingChange={handleLoadingChange}
           />
         )}
-        
       </main>
 
       <footer className="App-footer">
