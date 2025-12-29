@@ -189,6 +189,15 @@
   text-align: center;
 }
 
+.vintage-select {
+  text-align: center;
+  cursor: pointer;
+}
+
+.vintage-select option {
+  text-align: center;
+}
+
 .file-input {
   padding: 1rem;
   border: 2px dashed rgba(255, 255, 255, 0.5);

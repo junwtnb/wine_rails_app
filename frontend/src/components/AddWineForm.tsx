@@ -15,6 +15,16 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
   const [descriptionWord, setDescriptionWord] = useState('');
   const [vtg, setVtg] = useState<string>('');
 
+  // 現在年から1900年まで降順で年のオプションを生成
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear; year >= 1900; year--) {
+      years.push(year);
+    }
+    return years;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wineName.trim() || !descriptionWord.trim()) {
@@ -74,15 +84,18 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
             placeholder="感想を一言で入力してください（例: 芳醇、爽やか、エレガント）"
             className="search-input"
           />
-          <input
-            type="number"
+          <select
             value={vtg}
             onChange={(e) => setVtg(e.target.value)}
-            placeholder="ヴィンテージ（年）を入力してください（例: 2023）"
-            className="search-input"
-            min="1900"
-            max="2030"
-          />
+            className="search-input vintage-select"
+          >
+            <option value="">ヴィンテージを選択してください（任意）</option>
+            {generateYearOptions().map(year => (
+              <option key={year} value={year}>
+                {year}年
+              </option>
+            ))}
+          </select>
           <button type="submit" className="search-btn">
             感想を追加
           </button>
