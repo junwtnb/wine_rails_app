@@ -87,7 +87,7 @@ const AddWineForm: React.FC<AddWineFormProps> = ({
           <select
             value={vtg}
             onChange={(e) => setVtg(e.target.value)}
-            className="search-input vintage-select"
+            className={`search-input vintage-select ${!vtg ? 'placeholder' : ''}`}
           >
             <option value="">ヴィンテージを選択してください（任意）</option>
             {generateYearOptions().map(year => (

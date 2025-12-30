@@ -192,10 +192,22 @@
 .vintage-select {
   text-align: center;
   cursor: pointer;
+  color: #1a1a1a;
 }
 
 .vintage-select option {
   text-align: center;
+  color: #1a1a1a;
+}
+
+/* プレースホルダーoptionの色を薄くする */
+.vintage-select option[value=""] {
+  color: #999;
+}
+
+/* 選択されていない状態（プレースホルダー）の時の色 */
+.vintage-select.placeholder {
+  color: #999;
 }
 
 .file-input {
