@@ -186,6 +186,13 @@ class Api::V1::WinesController < ApplicationController
         coordinates: { lat: 49.9754, lng: 6.6499 },
         description: "エレガントなリースリングの産地"
       }
+    when /alsace|アルザス/
+      {
+        name: "アルザス",
+        country: "フランス",
+        coordinates: { lat: 48.5734, lng: 7.7521 },
+        description: "フルーティで香り豊かな白ワインの名産地"
+      }
     else
       nil
     end
