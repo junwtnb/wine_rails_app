@@ -38,9 +38,9 @@ class Api::V1::WinesController < ApplicationController
       description_word, is_generic = generate_description_from_name(query)
       region_info = detect_wine_region(query)
       message = if is_generic
-        "データベースにないワインですが、汎用的な感想を生成しました"
+        "このワインの詳細情報が不足しているため、一般的な特徴から感想を生成しています。より具体的な情報（生産者名・ヴィンテージ・品種名など）があれば、より個別的な感想を生成できます。"
       else
-        "データベースにないワインですが、感想を生成しました"
+        "データベースにないワインですが、入力いただいた特徴から感想を生成しました"
       end
 
       render json: {
