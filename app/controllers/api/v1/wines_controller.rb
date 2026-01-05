@@ -193,6 +193,48 @@ class Api::V1::WinesController < ApplicationController
         coordinates: { lat: 48.5734, lng: 7.7521 },
         description: "フルーティで香り豊かな白ワインの名産地"
       }
+    when /yamanashi|山梨|甲府|勝沼|koshu|コシュ/
+      {
+        name: "山梨",
+        country: "日本",
+        coordinates: { lat: 35.6638, lng: 138.5681 },
+        description: "日本ワインの発祥地、甲州ブドウの故郷"
+      }
+    when /nagano|長野|塩尻|千曲川|信州/
+      {
+        name: "長野",
+        country: "日本",
+        coordinates: { lat: 36.2048, lng: 138.1813 },
+        description: "冷涼な気候が育む上質な日本ワイン"
+      }
+    when /hokkaido|北海道|余市|富良野|十勝/
+      {
+        name: "北海道",
+        country: "日本",
+        coordinates: { lat: 43.2203, lng: 142.8635 },
+        description: "冷涼な気候で育つエレガントなワイン"
+      }
+    when /stellenbosch|paarl|constantia|south.africa|南アフリカ|ステレンボッシュ|パール/
+      {
+        name: "ステレンボッシュ",
+        country: "南アフリカ",
+        coordinates: { lat: -33.9321, lng: 18.8602 },
+        description: "アフリカ大陸最高峰のワイン産地"
+      }
+    when /marlborough|hawkes.bay|new.zealand|ニュージーランド|マールボロ|ホークスベイ/
+      {
+        name: "マールボロ",
+        country: "ニュージーランド",
+        coordinates: { lat: -41.5205, lng: 174.0000 },
+        description: "世界最高峰のソーヴィニヨン・ブランの産地"
+      }
+    when /douro|vinho.verde|portugal|ポルトガル|ドウロ|ヴィーニョヴェルデ/
+      {
+        name: "ドウロ",
+        country: "ポルトガル",
+        coordinates: { lat: 41.1579, lng: -7.7956 },
+        description: "ポートワインとドウロワインの故郷"
+      }
     else
       nil
     end
@@ -268,6 +310,20 @@ class Api::V1::WinesController < ApplicationController
       [ "コスパ", "親しみやすい", "フルーティ", "カジュアル" ].sample
     when /argentina|アルゼンチン/
       [ "情熱", "濃厚", "力強い", "ダイナミック" ].sample
+    # 日本
+    when /japan|日本|yamanashi|山梨|koshu|甲州|勝沼/
+      [ "繊細", "和の心", "上品", "清楚" ].sample
+    when /nagano|長野|塩尻|信州/
+      [ "清廉", "透明感", "高原の恵み", "純粋" ].sample
+    when /hokkaido|北海道|余市|富良野/
+      [ "清涼", "爽快", "北の大地", "純白" ].sample
+    # 南半球
+    when /south.africa|南アフリカ|stellenbosch|ステレンボッシュ/
+      [ "野性的", "大地の力", "アフリカの太陽", "情熱的" ].sample
+    when /new.zealand|ニュージーランド|marlborough|マールボロ/
+      [ "清澄", "南十字星", "自然派", "ピュア" ].sample
+    when /portugal|ポルトガル|douro|ドウロ/
+      [ "伝統的", "歴史の重み", "深遠", "古典的" ].sample
     else
       is_generic = true
       [ "個性的", "ユニーク", "印象的", "魅力的", "特別", "心地よい" ].sample
