@@ -37,6 +37,26 @@ const WineResult: React.FC<WineResultProps> = ({ result }) => {
           "{wine.description_word}"
         </div>
 
+        {wine.tasting_notes && (
+          <div className="tasting-notes">
+            <h4>テイスティングノート</h4>
+            <div className="tasting-details">
+              <div className="tasting-item">
+                <span className="tasting-label">🌸 香り:</span>
+                <span className="tasting-value">{wine.tasting_notes.aroma}</span>
+              </div>
+              <div className="tasting-item">
+                <span className="tasting-label">👅 味わい:</span>
+                <span className="tasting-value">{wine.tasting_notes.taste}</span>
+              </div>
+              <div className="tasting-item">
+                <span className="tasting-label">✨ 余韻:</span>
+                <span className="tasting-value">{wine.tasting_notes.finish}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {wine.name && (
           <div className="wine-name">
             {wine.name}

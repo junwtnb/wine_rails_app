@@ -36,6 +36,7 @@ class Api::V1::WinesController < ApplicationController
     if wines.empty?
       # 検索でヒットしなかった場合、新しい感想を生成
       description_word, is_generic = generate_description_from_name(query)
+      tasting_notes = generate_detailed_tasting_notes(query)
       region_info = detect_wine_region(query)
       message = if is_generic
         "このワインの詳細情報が不足しているため、一般的な特徴から感想を生成しています。より具体的な情報（生産者名・ヴィンテージ・品種名など）があれば、より個別的な感想を生成できます。"
@@ -47,6 +48,7 @@ class Api::V1::WinesController < ApplicationController
         wine: {
           name: query,
           description_word: description_word,
+          tasting_notes: tasting_notes,
           message: message,
           is_generic: is_generic,
           region: region_info
@@ -237,6 +239,77 @@ class Api::V1::WinesController < ApplicationController
       }
     else
       nil
+    end
+  end
+
+  def generate_detailed_tasting_notes(wine_name)
+    # 香り・味わい・余韻の詳細なテイスティングノートを生成
+    name_lower = wine_name.downcase
+    is_generic = false
+
+    case name_lower
+    when /bordeaux|margaux|medoc|ボルドー|マルゴー/
+      {
+        aroma: ["ブラックカラント", "杉", "バニラ", "スパイス"].sample,
+        taste: ["重厚", "格調高い", "タンニンしっかり", "風格ある"].sample,
+        finish: ["長く複雑な", "エレガントな", "力強い", "印象的な"].sample
+      }
+    when /burgundy|bourgogne|ブルゴーニュ/
+      {
+        aroma: ["赤い果実", "薔薇", "土の香り", "きのこ"].sample,
+        taste: ["繊細", "シルキー", "官能的", "複雑"].sample,
+        finish: ["上品で長い", "余韻美しい", "魅惑的な", "優雅な"].sample
+      }
+    when /champagne|シャンパーニュ/
+      {
+        aroma: ["柑橘", "花の蜜", "ブリオッシュ", "ミネラル"].sample,
+        taste: ["きめ細かい泡", "華やか", "爽やか", "祝祭的"].sample,
+        finish: ["爽快で清涼", "泡立ちが心地よい", "きらめく", "喜びあふれる"].sample
+      }
+    when /chablis|シャブリ/
+      {
+        aroma: ["青リンゴ", "貝殻", "レモン", "石灰"].sample,
+        taste: ["ミネラル豊か", "凛とした", "透明感", "クリスピー"].sample,
+        finish: ["清廉で長い", "潮風のような", "清涼感", "純粋な"].sample
+      }
+    when /chianti|barolo|brunello|キャンティ|バローロ/
+      {
+        aroma: ["チェリー", "ローズマリー", "革", "トリュフ"].sample,
+        taste: ["陽気", "力強い", "温かみ", "情熱的"].sample,
+        finish: ["躍動感ある", "太陽の恵み", "イタリアらしい", "心躍る"].sample
+      }
+    when /riesling|gewurztraminer|リースリング/
+      {
+        aroma: ["白い花", "蜂蜜", "ライチ", "石油香"].sample,
+        taste: ["フルーティ", "軽やか", "香り高い", "爽快"].sample,
+        finish: ["花のような", "アロマティック", "上品な甘み", "華やか"].sample
+      }
+    # 日本ワイン
+    when /japan|日本|yamanashi|山梨|koshu|甲州|勝沼/
+      {
+        aroma: ["柚子", "白い花", "和梨", "緑茶"].sample,
+        taste: ["繊細", "和の心", "上品", "優しい"].sample,
+        finish: ["清楚な", "日本らしい", "品のある", "心落ち着く"].sample
+      }
+    when /nagano|長野|塩尻|信州/
+      {
+        aroma: ["高原の風", "りんご", "山桜", "清流"].sample,
+        taste: ["透明感", "高原の恵み", "清廉", "澄みきった"].sample,
+        finish: ["高原を思わせる", "爽やかな風", "山の恵み", "自然の調和"].sample
+      }
+    when /hokkaido|北海道|余市|富良野/
+      {
+        aroma: ["雪解け水", "白樺", "ラベンダー", "冷涼な風"].sample,
+        taste: ["清涼", "純粋", "北の大地", "凛とした"].sample,
+        finish: ["雪のような純白", "北海道らしい", "清々しい", "大自然の恵み"].sample
+      }
+    else
+      is_generic = true
+      {
+        aroma: ["果実", "花", "スパイス", "ミネラル"].sample,
+        taste: ["個性的", "バランス良い", "心地よい", "印象的"].sample,
+        finish: ["満足感のある", "記憶に残る", "特別な", "魅力的な"].sample
+      }
     end
   end
 

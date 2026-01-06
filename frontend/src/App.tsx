@@ -13,10 +13,17 @@ export interface WineRegion {
   description: string;
 }
 
+export interface TastingNotes {
+  aroma: string;
+  taste: string;
+  finish: string;
+}
+
 export interface WineResponse {
   wine: {
     name?: string;
     description_word: string;
+    tasting_notes?: TastingNotes;
     vtg?: number;
     message: string;
     wine_type?: string;
