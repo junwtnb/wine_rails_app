@@ -11,6 +11,7 @@ Rails.application.routes.draw do
       resources :wines, only: [:show, :index, :create] do
         collection do
           post :search_by_name
+          get :statistics
         end
       end
     end

@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_15_131042) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_07_002716) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "wine_interactions", force: :cascade do |t|
+    t.string "session_id"
+    t.string "wine_name"
+    t.string "wine_type"
+    t.string "description_word"
+    t.datetime "searched_at"
+    t.string "region_country"
+    t.integer "vintage_year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "wines", force: :cascade do |t|
     t.string "name"

@@ -19,6 +19,15 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchMode, setSearchMode] = useState<'name' | 'image'>('name');
 
+  const generateSessionId = () => {
+    const stored = localStorage.getItem('wine-session-id');
+    if (stored) return stored;
+
+    const newSessionId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('wine-session-id', newSessionId);
+    return newSessionId;
+  };
+
   const handleNameSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
@@ -29,10 +38,12 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
     onLoadingChange(true);
 
     try {
+      const sessionId = generateSessionId();
       const response = await fetch('http://localhost:3000/api/v1/wines/search_by_name', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Session-ID': sessionId,
         },
         body: JSON.stringify({ query: searchQuery }),
       });

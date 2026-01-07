@@ -31,6 +31,7 @@ class Api::V1::WinesController < ApplicationController
     query = params[:query]
     return render json: { error: "検索クエリが必要です" }, status: :bad_request if query.blank?
 
+    session_id = request.headers['X-Session-ID'] || session.id || SecureRandom.uuid
     wines = Wine.search_by_name(query)
 
     if wines.empty?
@@ -43,6 +44,9 @@ class Api::V1::WinesController < ApplicationController
       else
         "入力いただいた特徴から感想を生成しました"
       end
+
+      # 検索履歴を記録
+      record_wine_interaction(session_id, query, description_word, tasting_notes, region_info)
 
       render json: {
         wine: {
@@ -60,6 +64,9 @@ class Api::V1::WinesController < ApplicationController
       # ヴィンテージに応じた感想を生成
       enhanced_description = enhance_description_with_vintage(wine)
       region_info = detect_wine_region(wine.name || query)
+      # 検索履歴を記録 (既存のワイン)
+      record_wine_interaction(session_id, wine.name, enhanced_description, nil, region_info, wine.vtg)
+
       render json: {
         wine: {
           name: wine.name,
@@ -69,6 +76,28 @@ class Api::V1::WinesController < ApplicationController
           region: region_info
         }
       }
+    end
+  end
+
+  def statistics
+    session_id = request.headers['X-Session-ID'] || params[:session_id] || 'default-session'
+
+    begin
+      interactions = WineInteraction.by_session(session_id).recent
+
+      stats = {
+        total_searches: interactions.count,
+        favorite_regions: interactions.where.not(region_country: nil).group(:region_country).count,
+        favorite_wine_types: interactions.group(:wine_type).count,
+        favorite_descriptions: interactions.group(:description_word).count,
+        vintage_preferences: interactions.where.not(vintage_year: nil).group(:vintage_year).count,
+        recent_searches: interactions.order(searched_at: :desc).limit(5).pluck(:wine_name, :description_word)
+      }
+
+      render json: { statistics: stats }
+    rescue => e
+      Rails.logger.error "Statistics error: #{e.message}"
+      render json: { error: "統計データの取得に失敗しました: #{e.message}" }, status: :internal_server_error
     end
   end
 
@@ -403,5 +432,37 @@ class Api::V1::WinesController < ApplicationController
     end
 
     [ description, is_generic ]
+  end
+
+  def record_wine_interaction(session_id, wine_name, description_word, tasting_notes, region_info, vintage_year = nil)
+    WineInteraction.create!(
+      session_id: session_id,
+      wine_name: wine_name,
+      wine_type: detect_wine_type(wine_name),
+      description_word: description_word,
+      searched_at: Time.current,
+      region_country: region_info&.dig(:country) || region_info&.dig("country"),
+      vintage_year: vintage_year
+    )
+  rescue => e
+    Rails.logger.error "Failed to record wine interaction: #{e.message}"
+  end
+
+  def detect_wine_type(wine_name)
+    name_lower = wine_name.downcase
+    case name_lower
+    when /red|rouge|赤/
+      "赤ワイン"
+    when /white|blanc|白/
+      "白ワイン"
+    when /rosé|ロゼ/
+      "ロゼワイン"
+    when /sparkling|champagne|シャンパン|スパークリング/
+      "スパークリング"
+    when /port|ポート/
+      "酒精強化ワイン"
+    else
+      "その他"
+    end
   end
 end

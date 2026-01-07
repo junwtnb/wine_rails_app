@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  session_id: MyString
+  wine_name: MyString
+  wine_type: MyString
+  description_word: MyString
+  searched_at: 2026-01-07 09:27:16
+  region_country: MyString
+  vintage_year: 1
+
+two:
+  session_id: MyString
+  wine_name: MyString
+  wine_type: MyString
+  description_word: MyString
+  searched_at: 2026-01-07 09:27:16
+  region_country: MyString
+  vintage_year: 1

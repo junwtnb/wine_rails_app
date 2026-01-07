@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 interface HamburgerMenuProps {
   onShowWineList: () => void;
   onShowAddForm: () => void;
+  onShowStatistics: () => void;
 }
 
-const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAddForm }) => {
+const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAddForm, onShowStatistics }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -44,6 +45,12 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAdd
               onClick={() => handleMenuItemClick(onShowWineList)}
             >
               📋 レビュー一覧
+            </button>
+            <button
+              className="menu-item"
+              onClick={() => handleMenuItemClick(onShowStatistics)}
+            >
+              📊 統計・傾向分析
             </button>
           </div>
         </>

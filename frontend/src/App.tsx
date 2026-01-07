@@ -5,6 +5,7 @@ import WineResult from './components/WineResult';
 import AddWineForm from './components/AddWineForm';
 import WineList from './components/WineList';
 import HamburgerMenu from './components/HamburgerMenu';
+import WineStatistics from './components/WineStatistics';
 
 export interface WineRegion {
   name: string;
@@ -40,6 +41,7 @@ function App() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [showWineList, setShowWineList] = useState(false);
+  const [showStatistics, setShowStatistics] = useState(false);
 
   const handleSearchResult = (result: WineResponse) => {
     setWineResult(result);
@@ -74,6 +76,7 @@ function App() {
           <HamburgerMenu
             onShowWineList={() => setShowWineList(true)}
             onShowAddForm={() => setShowAddForm(true)}
+            onShowStatistics={() => setShowStatistics(true)}
           />
           <div className="header-text">
             <h1>Wine One Word</h1>
@@ -130,6 +133,10 @@ function App() {
 
       {showWineList && (
         <WineList onClose={() => setShowWineList(false)} />
+      )}
+
+      {showStatistics && (
+        <WineStatistics onClose={() => setShowStatistics(false)} />
       )}
     </div>
   );
