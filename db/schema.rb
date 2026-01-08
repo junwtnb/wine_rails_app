@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_07_002716) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_08_021707) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,6 +22,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_002716) do
     t.datetime "searched_at"
     t.string "region_country"
     t.integer "vintage_year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "wine_quiz_questions", force: :cascade do |t|
+    t.text "question"
+    t.string "correct_answer"
+    t.string "option_a"
+    t.string "option_b"
+    t.string "option_c"
+    t.string "option_d"
+    t.integer "difficulty"
+    t.string "category"
+    t.text "explanation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "wine_quiz_results", force: :cascade do |t|
+    t.string "session_id"
+    t.integer "score"
+    t.integer "total_questions"
+    t.integer "correct_answers"
+    t.integer "difficulty"
+    t.datetime "completed_at"
+    t.integer "time_taken"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

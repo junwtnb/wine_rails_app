@@ -14,6 +14,13 @@ Rails.application.routes.draw do
           get :statistics
         end
       end
+
+      namespace :wine_quiz do
+        get :questions
+        post :submit
+        get :statistics
+        get :options
+      end
     end
   end
 

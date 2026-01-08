@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  session_id: MyString
+  score: 1
+  total_questions: 1
+  correct_answers: 1
+  difficulty: 1
+  completed_at: 2026-01-08 11:17:07
+  time_taken: 1
+
+two:
+  session_id: MyString
+  score: 1
+  total_questions: 1
+  correct_answers: 1
+  difficulty: 1
+  completed_at: 2026-01-08 11:17:07
+  time_taken: 1
