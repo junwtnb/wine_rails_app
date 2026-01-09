@@ -4,9 +4,10 @@ interface HamburgerMenuProps {
   onShowWineList: () => void;
   onShowAddForm: () => void;
   onShowStatistics: () => void;
+  onShowQuiz: () => void;
 }
 
-const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAddForm, onShowStatistics }) => {
+const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAddForm, onShowStatistics, onShowQuiz }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -51,6 +52,12 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ onShowWineList, onShowAdd
               onClick={() => handleMenuItemClick(onShowStatistics)}
             >
               📊 統計・傾向分析
+            </button>
+            <button
+              className="menu-item"
+              onClick={() => handleMenuItemClick(onShowQuiz)}
+            >
+              🏆 ワイン知識クイズ
             </button>
           </div>
         </>
