@@ -7,6 +7,8 @@ interface QuizQuestion {
   difficulty: number;
   difficulty_label: string;
   category: string;
+  correct_answer?: string;
+  explanation?: string;
 }
 
 interface QuizResult {
@@ -31,12 +33,19 @@ interface Achievement {
   type: string;
 }
 
+interface ReviewQuestion {
+  question: QuizQuestion;
+  selectedAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
 interface WineQuizProps {
   onClose: () => void;
 }
 
 const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
-  const [gameState, setGameState] = useState<'setup' | 'playing' | 'results'>('setup');
+  const [gameState, setGameState] = useState<'setup' | 'playing' | 'results' | 'review'>('setup');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -49,6 +58,8 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
 
   const generateSessionId = () => {
     const stored = localStorage.getItem('wine-session-id');
@@ -146,6 +157,31 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
       const data = await response.json();
       setResult(data.quiz_result);
       setAchievements(data.achievements || []);
+
+      // Process review questions for incorrect answers
+      const reviewData: ReviewQuestion[] = [];
+      if (data.results) {
+        data.results.forEach((questionResult: any) => {
+          if (!questionResult.is_correct) {
+            const question = questions.find(q => q.id === questionResult.question_id);
+            if (question) {
+              reviewData.push({
+                question: {
+                  ...question,
+                  correct_answer: questionResult.correct_answer,
+                  explanation: questionResult.explanation
+                },
+                selectedAnswer: questionResult.selected_answer,
+                correctAnswer: questionResult.correct_answer,
+                isCorrect: questionResult.is_correct
+              });
+            }
+          }
+        });
+      }
+      setReviewQuestions(reviewData);
+      setCurrentReviewIndex(0);
+
       setGameState('results');
     } catch (err) {
       setError(err instanceof Error ? err.message : '送信エラーが発生しました');
@@ -161,7 +197,28 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
     setSelectedAnswers({});
     setResult(null);
     setAchievements([]);
+    setReviewQuestions([]);
+    setCurrentReviewIndex(0);
     setError(null);
+  };
+
+  const startReview = () => {
+    setGameState('review');
+    setCurrentReviewIndex(0);
+  };
+
+  const handleNextReview = () => {
+    if (currentReviewIndex < reviewQuestions.length - 1) {
+      setCurrentReviewIndex(prev => prev + 1);
+    } else {
+      setGameState('results');
+    }
+  };
+
+  const handlePrevReview = () => {
+    if (currentReviewIndex > 0) {
+      setCurrentReviewIndex(prev => prev - 1);
+    }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -321,12 +378,84 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
             )}
 
             <div className="result-actions">
+              {reviewQuestions.length > 0 && (
+                <button className="review-btn" onClick={startReview}>
+                  📝 間違えた問題を振り返る ({reviewQuestions.length}問)
+                </button>
+              )}
               <button className="retry-btn" onClick={resetQuiz}>
                 🔄 もう一度挑戦
               </button>
               <button className="close-btn-result" onClick={onClose}>
                 閉じる
               </button>
+            </div>
+          </div>
+        )}
+
+        {gameState === 'review' && reviewQuestions.length > 0 && (
+          <div className="quiz-review">
+            <div className="review-header">
+              <h3>📝 問題振り返り</h3>
+              <div className="review-progress">
+                <span>{currentReviewIndex + 1} / {reviewQuestions.length}</span>
+              </div>
+            </div>
+
+            <div className="review-question-card">
+              <div className="question-meta">
+                <span className="difficulty">難易度: {reviewQuestions[currentReviewIndex].question.difficulty_label}</span>
+                <span className="category">カテゴリ: {reviewQuestions[currentReviewIndex].question.category}</span>
+                <span className="result-badge incorrect">❌ 不正解</span>
+              </div>
+
+              <h3 className="question-text">{reviewQuestions[currentReviewIndex].question.question}</h3>
+
+              <div className="review-answers">
+                {Object.entries(reviewQuestions[currentReviewIndex].question.options).map(([key, value]) => {
+                  const isSelected = reviewQuestions[currentReviewIndex].selectedAnswer === key;
+                  const isCorrect = reviewQuestions[currentReviewIndex].correctAnswer === key;
+
+                  let className = 'review-option';
+                  if (isSelected && !isCorrect) className += ' selected-wrong';
+                  if (isCorrect) className += ' correct-answer';
+
+                  return (
+                    <div key={key} className={className}>
+                      <span className="option-label">{key}</span>
+                      <span className="option-text">{value}</span>
+                      {isSelected && !isCorrect && <span className="indicator">あなたの回答</span>}
+                      {isCorrect && <span className="indicator">正解</span>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {reviewQuestions[currentReviewIndex].question.explanation && (
+                <div className="explanation">
+                  <h4>💡 解説</h4>
+                  <p>{reviewQuestions[currentReviewIndex].question.explanation}</p>
+                </div>
+              )}
+
+              <div className="review-navigation">
+                <button
+                  className="prev-btn"
+                  onClick={handlePrevReview}
+                  disabled={currentReviewIndex === 0}
+                >
+                  ← 前の問題
+                </button>
+                <button className="back-to-results-btn" onClick={() => setGameState('results')}>
+                  結果に戻る
+                </button>
+                <button
+                  className="next-btn"
+                  onClick={handleNextReview}
+                >
+                  {currentReviewIndex === reviewQuestions.length - 1 ? '結果に戻る' : '次の問題 →'}
+                </button>
+              </div>
             </div>
           </div>
         )}
