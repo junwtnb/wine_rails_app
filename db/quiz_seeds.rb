@@ -126,4 +126,125 @@ WineQuizQuestion.find_or_create_by!(
   explanation: "ドン・ペリニヨンはモエ・エ・シャンドンのプレステージ・キュヴェです。"
 )
 
+# 初級問題を追加
+WineQuizQuestion.find_or_create_by!(
+  question: "白ワインに使われる代表的なブドウ品種はどれですか？",
+  correct_answer: "A",
+  option_a: "シャルドネ",
+  option_b: "カベルネ・ソーヴィニヨン",
+  option_c: "ピノ・ノワール",
+  option_d: "シラー",
+  difficulty: 2,
+  category: "品種",
+  explanation: "シャルドネは世界中で栽培される白ワインの代表的なブドウ品種です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "赤ワインに使われる代表的なブドウ品種はどれですか？",
+  correct_answer: "B",
+  option_a: "リースリング",
+  option_b: "カベルネ・ソーヴィニヨン",
+  option_c: "ソーヴィニヨン・ブラン",
+  option_d: "ピノ・グリ",
+  difficulty: 2,
+  category: "品種",
+  explanation: "カベルネ・ソーヴィニヨンは世界中で愛される赤ワインの代表的品種です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "イタリアの有名なワイン産地といえば？",
+  correct_answer: "C",
+  option_a: "ナパ・バレー",
+  option_b: "ボルドー",
+  option_c: "トスカーナ",
+  option_d: "シャンパーニュ",
+  difficulty: 2,
+  category: "地域",
+  explanation: "トスカーナはキャンティなどで有名なイタリアの代表的なワイン産地です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "ドイツのワインといえば主にどの品種が有名ですか？",
+  correct_answer: "D",
+  option_a: "カベルネ・ソーヴィニヨン",
+  option_b: "シャルドネ",
+  option_c: "ピノ・ノワール",
+  option_d: "リースリング",
+  difficulty: 2,
+  category: "品種",
+  explanation: "リースリングはドイツを代表する白ブドウ品種で、上品な酸味が特徴です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "ワインの「ボディ」とは何を表しますか？",
+  correct_answer: "A",
+  option_a: "味わいの重さや濃厚さ",
+  option_b: "ワインの色の濃さ",
+  option_c: "アルコール度数",
+  option_d: "酸味の強さ",
+  difficulty: 2,
+  category: "基礎知識",
+  explanation: "ボディはワインの味わいの重さや濃厚さを表現する用語です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "スパークリングワインの泡はどうやってできますか？",
+  correct_answer: "B",
+  option_a: "炭酸ガスを注入",
+  option_b: "発酵によるガス",
+  option_c: "攪拌による泡立て",
+  option_d: "冷却による結晶化",
+  difficulty: 2,
+  category: "製造",
+  explanation: "スパークリングワインの泡は発酵過程で生じる炭酸ガスによって作られます。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "ワイングラスを持つときの正しい位置は？",
+  correct_answer: "C",
+  option_a: "ボウル部分",
+  option_b: "リム部分",
+  option_c: "ステム部分",
+  option_d: "ベース部分",
+  difficulty: 2,
+  category: "テイスティング",
+  explanation: "ステム（脚）部分を持つことで、手の温度がワインに伝わるのを防げます。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "ロゼワインはどうやって作られますか？",
+  correct_answer: "A",
+  option_a: "黒ブドウを短時間だけ皮と接触させる",
+  option_b: "赤ワインと白ワインを混ぜる",
+  option_c: "白ブドウに食紅を加える",
+  option_d: "特別なピンクのブドウを使う",
+  difficulty: 2,
+  category: "製造",
+  explanation: "ロゼワインは黒ブドウを短時間だけ皮と接触させて色をつけて作ります。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "カリフォルニアの有名なワイン産地は？",
+  correct_answer: "B",
+  option_a: "ソノマ・カウンティのみ",
+  option_b: "ナパ・バレー",
+  option_c: "ロサンゼルス",
+  option_d: "サンフランシスコ",
+  difficulty: 2,
+  category: "地域",
+  explanation: "ナパ・バレーはカリフォルニアを代表する世界的に有名なワイン産地です。"
+)
+
+WineQuizQuestion.find_or_create_by!(
+  question: "ワインのアルコール度数は通常何％くらいですか？",
+  correct_answer: "C",
+  option_a: "5-8%",
+  option_b: "8-10%",
+  option_c: "12-15%",
+  option_d: "18-20%",
+  difficulty: 2,
+  category: "基礎知識",
+  explanation: "一般的なワインのアルコール度数は12-15%程度です。"
+)
+
 puts "✅ ワインクイズ問題を#{WineQuizQuestion.count}件作成しました！"
