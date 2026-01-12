@@ -71,6 +71,9 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
   };
 
   useEffect(() => {
+  }, []);
+
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (gameState === 'playing' && timeLeft > 0) {
       interval = setInterval(() => {
@@ -88,7 +91,9 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/wine_quiz/questions?difficulty=${difficulty}&count=${questionCount}${category ? `&category=${category}` : ''}`, {
+      const url = `http://localhost:3000/api/v1/wine_quiz/questions?difficulty=${difficulty}&count=${questionCount}${category ? `&category=${category}` : ''}`;
+
+      const response = await fetch(url, {
         headers: {
           'X-Session-ID': generateSessionId(),
         },
