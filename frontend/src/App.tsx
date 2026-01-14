@@ -9,6 +9,9 @@ import WineStatistics from './components/WineStatistics';
 import WineQuiz from './components/WineQuiz';
 import WineQuizStatistics from './components/WineQuizStatistics';
 import ScrollToTop from './components/ScrollToTop';
+import ThemeManager from './components/ThemeManager';
+import NetworkStatus from './components/NetworkStatus';
+import UserActivityTracker from './components/UserActivityTracker';
 
 export interface WineRegion {
   name: string;
@@ -75,22 +78,28 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <div className="header-content">
-          <HamburgerMenu
-            onShowWineList={() => setShowWineList(true)}
-            onShowAddForm={() => setShowAddForm(true)}
-            onShowStatistics={() => setShowStatistics(true)}
-            onShowQuiz={() => setShowQuiz(true)}
-            onShowQuizStatistics={() => setShowQuizStatistics(true)}
-          />
-          <div className="header-text">
-            <h1>Wine One Word</h1>
-            <p>ワインの感想を「飲みやすい」以外の一言で！</p>
+    <ThemeManager>
+      <div className="App">
+        <header className="App-header">
+          <div className="header-content">
+            <HamburgerMenu
+              onShowWineList={() => setShowWineList(true)}
+              onShowAddForm={() => setShowAddForm(true)}
+              onShowStatistics={() => setShowStatistics(true)}
+              onShowQuiz={() => setShowQuiz(true)}
+              onShowQuizStatistics={() => setShowQuizStatistics(true)}
+            />
+            <div className="header-text">
+              <h1>Wine One Word</h1>
+              <p>ワインの感想を「飲みやすい」以外の一言で！</p>
+            </div>
+            {/* Network Status and Activity Tracker in header */}
+            <div className="header-status">
+              <NetworkStatus showNotification={true} />
+              <UserActivityTracker showStats={false} />
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <main className="App-main">
         <WineSearchForm
@@ -154,9 +163,17 @@ function App() {
         <WineQuizStatistics onClose={() => setShowQuizStatistics(false)} />
       )}
 
-      {/* Scroll to top button */}
-      <ScrollToTop threshold={400} />
-    </div>
+        {/* Scroll to top button */}
+        <ScrollToTop threshold={400} />
+
+        {/* User Activity Tracker (visible in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 1000 }}>
+            <UserActivityTracker showStats={true} />
+          </div>
+        )}
+      </div>
+    </ThemeManager>
   );
 }
 

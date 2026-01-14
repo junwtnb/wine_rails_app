@@ -4,6 +4,22 @@
   background: #ffffff;
   color: #1a1a1a;
   font-family: 'Georgia', 'Times New Roman', serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme support */
+[data-theme="dark"] .App,
+.theme-dark .App {
+  background: #121212;
+  color: #e0e0e0;
+}
+
+.theme-transitioning {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-transitioning * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* クイズ統計画面のスタイル */
@@ -29,6 +45,12 @@
   width: 100%;
   overflow-y: auto;
   position: relative;
+}
+
+[data-theme="dark"] .wine-quiz-statistics,
+.theme-dark .wine-quiz-statistics {
+  background: #2d2d2d;
+  color: #e0e0e0;
 }
 
 .wine-quiz-statistics .statistics-header {
@@ -2297,8 +2319,215 @@
   transform: translateY(-2px);
 }
 
+/* Theme Manager Styles */
+.theme-manager {
+  position: relative;
+}
+
+.theme-toggle-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.theme-icon {
+  font-size: 1.1rem;
+}
+
+[data-theme="dark"] .theme-toggle-btn,
+.theme-dark .theme-toggle-btn {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+.theme-debug-info {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* Network Status Styles */
+.network-status {
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.network-status.online {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.network-status.offline {
+  background: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.offline-info {
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.offline-message {
+  opacity: 0.8;
+}
+
+.last-online {
+  opacity: 0.6;
+  margin-top: 0.125rem;
+}
+
+[data-theme="dark"] .network-status,
+.theme-dark .network-status {
+  background: rgba(255,255,255,0.05);
+}
+
+/* User Activity Tracker Styles */
+.user-activity-tracker {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  max-width: 280px;
+  font-size: 0.8rem;
+}
+
+.user-activity-tracker.active {
+  border-left: 3px solid #4CAF50;
+}
+
+.user-activity-tracker.inactive {
+  border-left: 3px solid #FF9800;
+}
+
+[data-theme="dark"] .user-activity-tracker,
+.theme-dark .user-activity-tracker {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.activity-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+[data-theme="dark"] .activity-status,
+.theme-dark .activity-status {
+  border-bottom-color: #444;
+}
+
+.engagement-level {
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.activity-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+}
+
+.stat-item strong {
+  color: #666;
+}
+
+[data-theme="dark"] .stat-item strong,
+.theme-dark .stat-item strong {
+  color: #aaa;
+}
+
+/* Header status area */
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+/* Network notification animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .header-status {
+    display: none;
+  }
+
+  .theme-toggle-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .theme-text {
+    display: none;
+  }
+
   .wine-quiz-overlay {
     padding: 0.5rem;
   }
