@@ -8,6 +8,7 @@ import HamburgerMenu from './components/HamburgerMenu';
 import WineStatistics from './components/WineStatistics';
 import WineQuiz from './components/WineQuiz';
 import WineQuizStatistics from './components/WineQuizStatistics';
+import ScrollToTop from './components/ScrollToTop';
 
 export interface WineRegion {
   name: string;
@@ -152,6 +153,9 @@ function App() {
       {showQuizStatistics && (
         <WineQuizStatistics onClose={() => setShowQuizStatistics(false)} />
       )}
+
+      {/* Scroll to top button */}
+      <ScrollToTop threshold={400} />
     </div>
   );
 }

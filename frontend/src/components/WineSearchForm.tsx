@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { WineResponse } from '../App';
 import Spinner from './Spinner';
 
@@ -19,6 +19,39 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchMode, setSearchMode] = useState<'name' | 'image'>('name');
 
+  // useRef for input elements
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto focus on mount and when switching modes
+  useEffect(() => {
+    if (searchMode === 'name' && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchMode]);
+
+  // Keyboard shortcuts (Ctrl/Cmd + K to focus search, Ctrl/Cmd + U to switch mode)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === 'u') {
+        event.preventDefault();
+        setSearchMode(prev => prev === 'name' ? 'image' : 'name');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const generateSessionId = () => {
     const stored = localStorage.getItem('wine-session-id');
     if (stored) return stored;
@@ -26,6 +59,14 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
     const newSessionId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('wine-session-id', newSessionId);
     return newSessionId;
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSelectedFile(null);
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   };
 
   const handleNameSearch = async (e: React.FormEvent) => {
@@ -119,9 +160,10 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
       </div>
 
       {searchMode === 'name' ? (
-        <form onSubmit={handleNameSearch} className="search-form">
+        <form ref={formRef} onSubmit={handleNameSearch} className="search-form">
           <div className="form-group">
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -138,12 +180,23 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
                 '感想を聞く'
               )}
             </button>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="clear-btn"
+                title="クリア (Cmd+K で再フォーカス)"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </form>
       ) : (
         <form onSubmit={handleImageSearch} className="search-form">
           <div className="form-group">
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handleFileSelect}
@@ -167,6 +220,12 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
           )}
         </form>
       )}
+
+      <div className="keyboard-shortcuts">
+        <small className="shortcuts-help">
+          💡 ヒント: <kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd> で検索フォーカス　<kbd>⌘U</kbd> / <kbd>Ctrl+U</kbd> でモード切替
+        </small>
+      </div>
     </div>
   );
 };

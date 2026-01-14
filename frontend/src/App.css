@@ -247,6 +247,242 @@
   }
 }
 
+/* ScrollToTop コンポーネントのスタイル */
+.scroll-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  z-index: 999;
+  font-weight: bold;
+}
+
+.scroll-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.scroll-to-top:active {
+  transform: translateY(0);
+}
+
+.scroll-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.scroll-text {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+/* 検索フォーム強化スタイル */
+.search-input {
+  position: relative;
+}
+
+.form-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-btn {
+  background: #ff4757;
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.clear-btn:hover {
+  background: #ff3742;
+  transform: scale(1.1);
+}
+
+.keyboard-shortcuts {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.shortcuts-help {
+  color: #666;
+  font-style: italic;
+}
+
+.shortcuts-help kbd {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+  color: #333;
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.85em;
+  margin: 0 2px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+/* QuizTimer コンポーネントのスタイル */
+.quiz-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.timer-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.timer-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-bg {
+  opacity: 0.3;
+}
+
+.timer-progress {
+  transition: stroke 0.3s ease, stroke-dashoffset 1s ease-in-out;
+}
+
+.timer-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #333;
+}
+
+.timer-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.timer-unit {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.timer-info {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.timer-total {
+  margin-bottom: 0.5rem;
+}
+
+.timer-warning-text {
+  color: #ff8800;
+  font-weight: bold;
+  animation: blink 1s infinite;
+}
+
+.timer-timeout-text {
+  color: #ff4444;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* Timer animations */
+.timer-urgent {
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+.timer-warning .timer-circle {
+  animation: glow 1s ease-in-out infinite alternate;
+}
+
+.timer-pulse .timer-display {
+  animation: pulse 0.2s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 5px rgba(255, 136, 0, 0.5); }
+  to { box-shadow: 0 0 20px rgba(255, 136, 0, 0.8), 0 0 30px rgba(255, 136, 0, 0.6); }
+}
+
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 1rem;
+    right: 1rem;
+    width: 50px;
+    height: 50px;
+  }
+
+  .scroll-icon {
+    font-size: 1rem;
+  }
+
+  .scroll-text {
+    font-size: 0.6rem;
+  }
+
+  .timer-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .timer-number {
+    font-size: 1.8rem;
+  }
+}
+
 .App-header {
   padding: 2rem;
 }
