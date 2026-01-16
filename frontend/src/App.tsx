@@ -9,9 +9,12 @@ import WineStatistics from './components/WineStatistics';
 import WineQuiz from './components/WineQuiz';
 import WineQuizStatistics from './components/WineQuizStatistics';
 import ScrollToTop from './components/ScrollToTop';
-import ThemeManager from './components/ThemeManager';
 import NetworkStatus from './components/NetworkStatus';
 import UserActivityTracker from './components/UserActivityTracker';
+import SearchHistoryPanel from './components/SearchHistoryPanel';
+import UserSettingsPanel from './components/UserSettingsPanel';
+import { AppProvider, useApp } from './contexts/AppContext';
+import { ThemeProvider, useTheme, getThemeIcon, getThemeName } from './contexts/ThemeContext';
 
 export interface WineRegion {
   name: string;
@@ -39,93 +42,114 @@ export interface WineResponse {
   };
 }
 
-function App() {
-  const [wineResult, setWineResult] = useState<WineResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+// 内部アプリコンポーネント
+function AppContent() {
+  const { state, dispatch } = useApp();
+  const { state: themeState, actions: themeActions } = useTheme();
+
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [showWineList, setShowWineList] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showQuizStatistics, setShowQuizStatistics] = useState(false);
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [showUserSettings, setShowUserSettings] = useState(false);
 
-  const handleSearchResult = (result: WineResponse) => {
-    setWineResult(result);
-    setError(null);
+  const handleSearchResult = (result: WineResponse, query: string = '', source: 'search' | 'random' | 'quiz' = 'search') => {
+    dispatch({ type: 'SET_WINE_RESULT', payload: result });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    dispatch({ type: 'INCREMENT_TOTAL_SEARCHES' });
+
+    // 検索履歴に追加
+    if (state.userPreferences.autoSaveSearchHistory) {
+      dispatch({
+        type: 'ADD_SEARCH_HISTORY',
+        payload: { query, result, source }
+      });
+    }
   };
 
   const handleError = (errorMessage: string) => {
-    setError(errorMessage);
-    setWineResult(null);
+    dispatch({ type: 'SET_ERROR', payload: errorMessage });
+    dispatch({ type: 'SET_WINE_RESULT', payload: null });
   };
 
   const handleLoadingChange = (loading: boolean) => {
-    setIsLoading(loading);
+    dispatch({ type: 'SET_LOADING', payload: loading });
   };
 
   const handleAddSuccess = (message: string) => {
-    setSuccessMessage(message);
-    setError(null);
-    setShowAddForm(false);
-    setTimeout(() => setSuccessMessage(null), 3000);
+    dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: message });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    setTimeout(() => dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: null }), 3000);
   };
 
   const handleAddError = (errorMessage: string) => {
-    setError(errorMessage);
-    setSuccessMessage(null);
+    dispatch({ type: 'SET_ERROR', payload: errorMessage });
+    dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: null });
   };
 
   return (
-    <ThemeManager>
-      <div className="App">
-        <header className="App-header">
-          <div className="header-content">
-            <HamburgerMenu
-              onShowWineList={() => setShowWineList(true)}
-              onShowAddForm={() => setShowAddForm(true)}
-              onShowStatistics={() => setShowStatistics(true)}
-              onShowQuiz={() => setShowQuiz(true)}
-              onShowQuizStatistics={() => setShowQuizStatistics(true)}
-            />
-            <div className="header-text">
-              <h1>Wine One Word</h1>
-              <p>ワインの感想を「飲みやすい」以外の一言で！</p>
-            </div>
-            {/* Network Status and Activity Tracker in header */}
-            <div className="header-status">
-              <NetworkStatus showNotification={true} />
-              <UserActivityTracker showStats={false} />
-            </div>
+    <div className="App">
+      <header className="App-header">
+        <div className="header-content">
+          <HamburgerMenu
+            onShowWineList={() => setShowWineList(true)}
+            onShowAddForm={() => {}}
+            onShowStatistics={() => setShowStatistics(true)}
+            onShowQuiz={() => setShowQuiz(true)}
+            onShowQuizStatistics={() => setShowQuizStatistics(true)}
+          />
+          <div className="header-text">
+            <h1>Wine One Word</h1>
+            <p>ワインの感想を「飲みやすい」以外の一言で！</p>
           </div>
-        </header>
+          {/* Header controls */}
+          <div className="header-status">
+            <button
+              onClick={() => setShowSearchHistory(true)}
+              className="header-btn"
+              title="検索履歴"
+            >
+              🕒
+            </button>
+            <button
+              onClick={() => setShowUserSettings(true)}
+              className="header-btn"
+              title="設定"
+            >
+              ⚙️
+            </button>
+            <button
+              onClick={themeActions.toggleTheme}
+              className="header-btn theme-btn"
+              title={getThemeName(themeState.mode, themeState.actualTheme)}
+            >
+              {getThemeIcon(themeState.actualTheme, themeState.mode)}
+            </button>
+            <NetworkStatus showNotification={state.userPreferences.showNotifications} />
+          </div>
+        </div>
+      </header>
 
       <main className="App-main">
         <WineSearchForm
-          onResult={handleSearchResult}
+          onResult={(result, query) => handleSearchResult(result, query, 'search')}
           onError={handleError}
           onLoadingChange={handleLoadingChange}
-          isLoading={isLoading}
+          isLoading={state.isLoading}
         />
 
-        {isLoading && <div className="loading">検索中...</div>}
+        {state.isLoading && <div className="loading">検索中...</div>}
 
-        {error && <div className="error">{error}</div>}
+        {state.error && <div className="error">{state.error}</div>}
 
-        {successMessage && <div className="success">{successMessage}</div>}
+        {state.successMessage && <div className="success">{state.successMessage}</div>}
 
-        {wineResult && !isLoading && (
-          <WineResult result={wineResult} />
+        {state.currentWineResult && !state.isLoading && (
+          <WineResult result={state.currentWineResult} />
         )}
 
-        {showAddForm && (
-          <AddWineForm
-            onSuccess={handleAddSuccess}
-            onError={handleAddError}
-            onLoadingChange={handleLoadingChange}
-          />
-        )}
       </main>
 
       <footer className="App-footer">
@@ -163,17 +187,46 @@ function App() {
         <WineQuizStatistics onClose={() => setShowQuizStatistics(false)} />
       )}
 
-        {/* Scroll to top button */}
-        <ScrollToTop threshold={400} />
+      {showSearchHistory && (
+        <SearchHistoryPanel
+          onClose={() => setShowSearchHistory(false)}
+          onSelectResult={(result) => {
+            dispatch({ type: 'SET_WINE_RESULT', payload: result });
+            setShowSearchHistory(false);
+          }}
+        />
+      )}
 
-        {/* User Activity Tracker (visible in development) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 1000 }}>
-            <UserActivityTracker showStats={true} />
-          </div>
-        )}
-      </div>
-    </ThemeManager>
+      {showUserSettings && (
+        <UserSettingsPanel onClose={() => setShowUserSettings(false)} />
+      )}
+
+      {/* Scroll to top button */}
+      <ScrollToTop threshold={400} />
+
+      {/* User Activity Tracker (visible in development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 1000 }}>
+          <UserActivityTracker
+            showStats={true}
+            onActivityChange={(isActive) => {
+              dispatch({ type: 'SET_USER_ACTIVE', payload: isActive });
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// メインアプリコンポーネント（プロバイダーでラップ）
+function App() {
+  return (
+    <AppProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </AppProvider>
   );
 }
 

@@ -3,7 +3,7 @@ import { WineResponse } from '../App';
 import Spinner from './Spinner';
 
 interface WineSearchFormProps {
-  onResult: (result: WineResponse) => void;
+  onResult: (result: WineResponse, query?: string) => void;
   onError: (error: string) => void;
   onLoadingChange: (loading: boolean) => void;
   isLoading: boolean;
@@ -94,7 +94,7 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
       }
 
       const data: WineResponse = await response.json();
-      onResult(data);
+      onResult(data, searchQuery);
     } catch (error) {
       onError(error instanceof Error ? error.message : '検索エラーが発生しました');
     } finally {
@@ -125,7 +125,7 @@ const WineSearchForm: React.FC<WineSearchFormProps> = ({
       }
 
       const data: WineResponse = await response.json();
-      onResult(data);
+      onResult(data, `画像: ${selectedFile?.name || 'アップロード画像'}`);
     } catch (error) {
       onError(error instanceof Error ? error.message : '画像分析エラーが発生しました');
     } finally {
