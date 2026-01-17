@@ -13,6 +13,7 @@ import NetworkStatus from './components/NetworkStatus';
 import UserActivityTracker from './components/UserActivityTracker';
 import SearchHistoryPanel from './components/SearchHistoryPanel';
 import UserSettingsPanel from './components/UserSettingsPanel';
+import AdvancedWineForm from './components/AdvancedWineForm';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider, useTheme, getThemeIcon, getThemeName } from './contexts/ThemeContext';
 
@@ -54,6 +55,7 @@ function AppContent() {
   const [showQuizStatistics, setShowQuizStatistics] = useState(false);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
+  const [showAdvancedForm, setShowAdvancedForm] = useState(false);
 
   const handleSearchResult = (result: WineResponse, query: string = '', source: 'search' | 'random' | 'quiz' = 'search') => {
     dispatch({ type: 'SET_WINE_RESULT', payload: result });
@@ -89,6 +91,18 @@ function AppContent() {
     dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: null });
   };
 
+  const handleAdvancedFormSubmit = async (formData: any) => {
+    try {
+      // APIへの送信処理をここに実装
+      console.log('Advanced Wine Form submitted:', formData);
+
+      handleAddSuccess('詳細ワイン登録が完了しました！');
+      setShowAdvancedForm(false);
+    } catch (error) {
+      handleAddError('詳細ワイン登録に失敗しました');
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -106,6 +120,13 @@ function AppContent() {
           </div>
           {/* Header controls */}
           <div className="header-status">
+            <button
+              onClick={() => setShowAdvancedForm(true)}
+              className="header-btn"
+              title="詳細ワイン登録"
+            >
+              📝
+            </button>
             <button
               onClick={() => setShowSearchHistory(true)}
               className="header-btn"
@@ -199,6 +220,13 @@ function AppContent() {
 
       {showUserSettings && (
         <UserSettingsPanel onClose={() => setShowUserSettings(false)} />
+      )}
+
+      {showAdvancedForm && (
+        <AdvancedWineForm
+          onSubmit={handleAdvancedFormSubmit}
+          onCancel={() => setShowAdvancedForm(false)}
+        />
       )}
 
       {/* Scroll to top button */}
