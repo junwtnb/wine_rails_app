@@ -109,7 +109,7 @@ function AppContent() {
         <div className="header-content">
           <HamburgerMenu
             onShowWineList={() => setShowWineList(true)}
-            onShowAddForm={() => {}}
+            onShowAddForm={() => setShowAdvancedForm(true)}
             onShowStatistics={() => setShowStatistics(true)}
             onShowQuiz={() => setShowQuiz(true)}
             onShowQuizStatistics={() => setShowQuizStatistics(true)}
