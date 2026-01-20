@@ -56,6 +56,7 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
   const [questionCount, setQuestionCount] = useState(5);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
@@ -161,7 +162,32 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
 
       const data = await response.json();
       setResult(data.quiz_result);
-      setAchievements(data.achievements || []);
+
+      // アチーブメント管理 - 新規取得のみ表示
+      const receivedAchievements = data.achievements || [];
+      setAchievements(receivedAchievements);
+
+      if (receivedAchievements.length > 0) {
+        // 既に取得済みのアチーブメントを取得
+        const obtainedAchievements = JSON.parse(localStorage.getItem('wine-quiz-achievements') || '[]');
+
+        // 新規アチーブメントをフィルタリング
+        const newlyObtained = receivedAchievements.filter((achievement: Achievement) =>
+          !obtainedAchievements.some((obtained: any) =>
+            obtained.title === achievement.title && obtained.description === achievement.description
+          )
+        );
+
+        setNewAchievements(newlyObtained);
+
+        // 新規アチーブメントを永続化
+        if (newlyObtained.length > 0) {
+          const updatedAchievements = [...obtainedAchievements, ...newlyObtained];
+          localStorage.setItem('wine-quiz-achievements', JSON.stringify(updatedAchievements));
+        }
+      } else {
+        setNewAchievements([]);
+      }
 
       // Process review questions for incorrect answers
       const reviewData: ReviewQuestion[] = [];
@@ -202,6 +228,7 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
     setSelectedAnswers({});
     setResult(null);
     setAchievements([]);
+    setNewAchievements([]);
     setReviewQuestions([]);
     setCurrentReviewIndex(0);
     setError(null);
@@ -367,10 +394,10 @@ const WineQuiz: React.FC<WineQuizProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {achievements.length > 0 && (
+            {newAchievements.length > 0 && (
               <div className="achievements">
-                <h4>🏅 アチーブメント獲得！</h4>
-                {achievements.map((achievement, index) => (
+                <h4>🏅 新規アチーブメント獲得！</h4>
+                {newAchievements.map((achievement, index) => (
                   <div key={index} className="achievement-item">
                     <span className="achievement-emoji">{achievement.emoji}</span>
                     <div className="achievement-text">
