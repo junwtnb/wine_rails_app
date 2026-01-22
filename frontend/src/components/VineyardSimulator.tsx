@@ -1,0 +1,958 @@
+import React, { useReducer, useEffect, useCallback } from 'react';
+
+// ゲーム状態の型定義
+interface GameState {
+  phase: 'setup' | 'planting' | 'growing' | 'harvest' | 'winemaking' | 'completed';
+  day: number;
+  season: 'spring' | 'summer' | 'autumn' | 'winter';
+  year: number;
+
+  // ぶどう畑の状態
+  vineyard: {
+    variety: GrapeVariety | null;
+    plantDate: number | null;
+    growth: number; // 0-100
+    health: number; // 0-100
+    waterLevel: number; // 0-100
+    fertilizer: number; // 0-100
+    diseases: Disease[];
+  };
+
+  // 天候システム
+  weather: {
+    current: WeatherType;
+    temperature: number; // 摂氏
+    rainfall: number; // mm
+    forecast: WeatherType[];
+  };
+
+  // 資源管理
+  resources: {
+    money: number;
+    water: number;
+    fertilizer: number;
+    pesticide: number;
+  };
+
+  // 収穫
+  harvest: {
+    quantity: number; // kg
+    quality: number; // 0-100
+    sugarContent: number; // Brix値
+    acidity: number; // %
+  };
+
+  // ワイン醸造
+  wine: {
+    fermentationDays: number;
+    agingMonths: number;
+    finalQuality: number; // 0-100
+    style: WineStyle | null;
+    score: number; // 0-100
+    name: string;
+  };
+
+  // ゲーム統計
+  stats: {
+    totalHarvests: number;
+    bestWineScore: number;
+    totalMoney: number;
+    experience: number;
+  };
+
+  // UI状態
+  ui: {
+    selectedAction: ActionType | null;
+    showWeatherDetail: boolean;
+    notifications: Notification[];
+    gameSpeed: 1 | 2 | 4; // 時間加速
+  };
+}
+
+// 型定義
+interface GrapeVariety {
+  id: string;
+  name: string;
+  emoji: string;
+  growthTime: number; // 日数
+  waterNeeds: number; // 1-5
+  temperatureRange: [number, number]; // 最適温度範囲
+  diseaseResistance: number; // 1-5
+  wineTypes: WineStyle[];
+  price: number; // 苗の価格
+}
+
+type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'snowy' | 'hot' | 'cold';
+
+type Disease = {
+  id: string;
+  name: string;
+  severity: number; // 1-5
+  effect: 'growth' | 'health' | 'quality';
+};
+
+type WineStyle = 'dry' | 'sweet' | 'sparkling' | 'fortified' | 'ice';
+
+type ActionType = 'water' | 'fertilize' | 'spray' | 'prune' | 'harvest' | 'ferment' | 'age';
+
+interface Notification {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  timestamp: Date;
+}
+
+// アクション型
+type GameAction =
+  | { type: 'START_GAME' }
+  | { type: 'PLANT_GRAPE'; variety: GrapeVariety }
+  | { type: 'ADVANCE_TIME' }
+  | { type: 'WATER_PLANTS'; amount: number }
+  | { type: 'APPLY_FERTILIZER'; amount: number }
+  | { type: 'SPRAY_PESTICIDE' }
+  | { type: 'PRUNE_VINES' }
+  | { type: 'HARVEST_GRAPES' }
+  | { type: 'START_FERMENTATION'; style: WineStyle }
+  | { type: 'AGE_WINE'; months: number }
+  | { type: 'COMPLETE_WINE'; name: string }
+  | { type: 'BUY_RESOURCES'; resource: keyof GameState['resources']; amount: number }
+  | { type: 'SET_GAME_SPEED'; speed: 1 | 2 | 4 }
+  | { type: 'TOGGLE_WEATHER_DETAIL' }
+  | { type: 'DISMISS_NOTIFICATION'; id: string }
+  | { type: 'UPDATE_WEATHER' }
+  | { type: 'RESET_GAME' };
+
+// ぶどう品種データ
+const grapeVarieties: GrapeVariety[] = [
+  {
+    id: 'chardonnay',
+    name: 'シャルドネ',
+    emoji: '🍇',
+    growthTime: 120,
+    waterNeeds: 3,
+    temperatureRange: [15, 25],
+    diseaseResistance: 2,
+    wineTypes: ['dry', 'sparkling'],
+    price: 1000
+  },
+  {
+    id: 'pinot-noir',
+    name: 'ピノ・ノワール',
+    emoji: '🟣',
+    growthTime: 140,
+    waterNeeds: 4,
+    temperatureRange: [12, 22],
+    diseaseResistance: 1,
+    wineTypes: ['dry'],
+    price: 1500
+  },
+  {
+    id: 'cabernet',
+    name: 'カベルネ・ソーヴィニヨン',
+    emoji: '🔴',
+    growthTime: 160,
+    waterNeeds: 2,
+    temperatureRange: [18, 28],
+    diseaseResistance: 4,
+    wineTypes: ['dry', 'fortified'],
+    price: 1200
+  },
+  {
+    id: 'riesling',
+    name: 'リースリング',
+    emoji: '🟡',
+    growthTime: 110,
+    waterNeeds: 3,
+    temperatureRange: [10, 20],
+    diseaseResistance: 3,
+    wineTypes: ['sweet', 'ice'],
+    price: 800
+  }
+];
+
+// 初期状態
+const initialState: GameState = {
+  phase: 'setup',
+  day: 1,
+  season: 'spring',
+  year: 1,
+  vineyard: {
+    variety: null,
+    plantDate: null,
+    growth: 0,
+    health: 100,
+    waterLevel: 50,
+    fertilizer: 50,
+    diseases: []
+  },
+  weather: {
+    current: 'sunny',
+    temperature: 20,
+    rainfall: 0,
+    forecast: ['sunny', 'cloudy', 'sunny']
+  },
+  resources: {
+    money: 5000,
+    water: 100,
+    fertilizer: 50,
+    pesticide: 20
+  },
+  harvest: {
+    quantity: 0,
+    quality: 0,
+    sugarContent: 0,
+    acidity: 0
+  },
+  wine: {
+    fermentationDays: 0,
+    agingMonths: 0,
+    finalQuality: 0,
+    style: null,
+    score: 0,
+    name: ''
+  },
+  stats: {
+    totalHarvests: 0,
+    bestWineScore: 0,
+    totalMoney: 5000,
+    experience: 0
+  },
+  ui: {
+    selectedAction: null,
+    showWeatherDetail: false,
+    notifications: [],
+    gameSpeed: 1
+  }
+};
+
+// ユーティリティ関数
+const getSeason = (day: number): 'spring' | 'summer' | 'autumn' | 'winter' => {
+  const dayOfYear = day % 365;
+  if (dayOfYear < 90) return 'spring';
+  if (dayOfYear < 180) return 'summer';
+  if (dayOfYear < 270) return 'autumn';
+  return 'winter';
+};
+
+const getRandomWeather = (season: string): WeatherType => {
+  const weatherBySeason: Record<string, WeatherType[]> = {
+    spring: ['sunny', 'cloudy', 'rainy'],
+    summer: ['sunny', 'hot', 'cloudy'],
+    autumn: ['cloudy', 'rainy', 'sunny'],
+    winter: ['cold', 'snowy', 'cloudy']
+  };
+  const options = weatherBySeason[season] || ['sunny'];
+  return options[Math.floor(Math.random() * options.length)];
+};
+
+const addNotification = (
+  notifications: Notification[],
+  message: string,
+  type: 'info' | 'warning' | 'success' | 'error' = 'info'
+): Notification[] => {
+  const newNotification: Notification = {
+    id: Date.now().toString(),
+    message,
+    type,
+    timestamp: new Date()
+  };
+  return [newNotification, ...notifications.slice(0, 4)]; // 最大5件まで
+};
+
+// メインリデューサー
+function gameReducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case 'START_GAME':
+      return { ...initialState, phase: 'planting' };
+
+    case 'PLANT_GRAPE':
+      if (state.resources.money < action.variety.price) {
+        return {
+          ...state,
+          ui: {
+            ...state.ui,
+            notifications: addNotification(
+              state.ui.notifications,
+              '資金が不足しています！',
+              'error'
+            )
+          }
+        };
+      }
+
+      return {
+        ...state,
+        phase: 'growing',
+        vineyard: {
+          ...state.vineyard,
+          variety: action.variety,
+          plantDate: state.day,
+          growth: 0,
+          health: 100
+        },
+        resources: {
+          ...state.resources,
+          money: state.resources.money - action.variety.price
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            `${action.variety.name}を植えました！🌱`,
+            'success'
+          )
+        }
+      };
+
+    case 'ADVANCE_TIME':
+      if (!state.vineyard.variety) return state;
+
+      const newDay = state.day + 1;
+      const newSeason = getSeason(newDay);
+      const newWeather = getRandomWeather(newSeason);
+      const daysSinceStart = newDay - (state.vineyard.plantDate || 0);
+
+      // 成長計算
+      let growthIncrease = 1;
+      if (state.weather.current === 'sunny') growthIncrease += 0.5;
+      if (state.weather.current === 'rainy') growthIncrease += 0.3;
+      if (state.weather.current === 'stormy') growthIncrease -= 0.5;
+
+      // 水分レベルの変化
+      let waterChange = -2; // 基本消費
+      if (state.weather.current === 'rainy') waterChange += 15;
+      if (state.weather.current === 'hot') waterChange -= 5;
+
+      const newGrowth = Math.min(100, state.vineyard.growth + growthIncrease);
+      const newWaterLevel = Math.max(0, state.vineyard.waterLevel + waterChange);
+
+      // 健康状態の計算
+      let healthChange = 0;
+      if (newWaterLevel < 20) healthChange -= 2;
+      if (newWaterLevel > 80) healthChange -= 1;
+      if (state.vineyard.fertilizer < 30) healthChange -= 1;
+
+      const newHealth = Math.max(0, Math.min(100, state.vineyard.health + healthChange));
+
+      // 収穫可能かチェック
+      const canHarvest = newGrowth >= 90 && daysSinceStart >= (state.vineyard.variety?.growthTime || 120);
+      let newPhase = state.phase;
+      let notifications = state.ui.notifications;
+
+      if (canHarvest && state.phase === 'growing') {
+        newPhase = 'harvest';
+        notifications = addNotification(
+          notifications,
+          '🍇 ぶどうが収穫できます！',
+          'success'
+        );
+      }
+
+      return {
+        ...state,
+        day: newDay,
+        season: newSeason,
+        year: Math.floor((newDay - 1) / 365) + 1,
+        phase: newPhase,
+        vineyard: {
+          ...state.vineyard,
+          growth: newGrowth,
+          health: newHealth,
+          waterLevel: newWaterLevel,
+          fertilizer: Math.max(0, state.vineyard.fertilizer - 0.5)
+        },
+        weather: {
+          ...state.weather,
+          current: newWeather,
+          temperature: 15 + Math.random() * 20,
+          rainfall: state.weather.current === 'rainy' ? Math.random() * 10 : 0
+        },
+        ui: {
+          ...state.ui,
+          notifications
+        }
+      };
+
+    case 'WATER_PLANTS':
+      if (state.resources.water < action.amount) {
+        return {
+          ...state,
+          ui: {
+            ...state.ui,
+            notifications: addNotification(
+              state.ui.notifications,
+              '水が不足しています！',
+              'error'
+            )
+          }
+        };
+      }
+
+      return {
+        ...state,
+        vineyard: {
+          ...state.vineyard,
+          waterLevel: Math.min(100, state.vineyard.waterLevel + action.amount)
+        },
+        resources: {
+          ...state.resources,
+          water: state.resources.water - action.amount
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            '💧 水やりをしました',
+            'info'
+          )
+        }
+      };
+
+    case 'APPLY_FERTILIZER':
+      if (state.resources.fertilizer < action.amount) {
+        return {
+          ...state,
+          ui: {
+            ...state.ui,
+            notifications: addNotification(
+              state.ui.notifications,
+              '肥料が不足しています！',
+              'error'
+            )
+          }
+        };
+      }
+
+      return {
+        ...state,
+        vineyard: {
+          ...state.vineyard,
+          fertilizer: Math.min(100, state.vineyard.fertilizer + action.amount * 2)
+        },
+        resources: {
+          ...state.resources,
+          fertilizer: state.resources.fertilizer - action.amount
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            '🌿 肥料を与えました',
+            'info'
+          )
+        }
+      };
+
+    case 'HARVEST_GRAPES':
+      const variety = state.vineyard.variety;
+      if (!variety) return state;
+
+      const baseQuantity = 100; // kg
+      const qualityMultiplier = state.vineyard.health / 100;
+      const growthMultiplier = state.vineyard.growth / 100;
+
+      const harvestQuantity = Math.floor(baseQuantity * qualityMultiplier * growthMultiplier);
+      const harvestQuality = Math.floor((state.vineyard.health + state.vineyard.growth) / 2);
+
+      return {
+        ...state,
+        phase: 'winemaking',
+        harvest: {
+          quantity: harvestQuantity,
+          quality: harvestQuality,
+          sugarContent: 20 + Math.random() * 10,
+          acidity: 0.5 + Math.random() * 0.3
+        },
+        stats: {
+          ...state.stats,
+          totalHarvests: state.stats.totalHarvests + 1
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            `🍇 ${harvestQuantity}kgのぶどうを収穫しました！`,
+            'success'
+          )
+        }
+      };
+
+    case 'START_FERMENTATION':
+      return {
+        ...state,
+        wine: {
+          ...state.wine,
+          style: action.style,
+          fermentationDays: 0
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            '🍷 発酵を開始しました',
+            'info'
+          )
+        }
+      };
+
+    case 'AGE_WINE':
+      return {
+        ...state,
+        wine: {
+          ...state.wine,
+          agingMonths: action.months
+        }
+      };
+
+    case 'COMPLETE_WINE':
+      const baseScore = state.harvest.quality;
+      const fermentationBonus = Math.min(10, state.wine.fermentationDays);
+      const agingBonus = Math.min(15, state.wine.agingMonths * 2);
+      const finalScore = Math.min(100, baseScore + fermentationBonus + agingBonus);
+
+      const revenue = finalScore * 100; // スコア×100円
+
+      return {
+        ...state,
+        phase: 'completed',
+        wine: {
+          ...state.wine,
+          name: action.name,
+          finalQuality: state.harvest.quality,
+          score: finalScore
+        },
+        resources: {
+          ...state.resources,
+          money: state.resources.money + revenue
+        },
+        stats: {
+          ...state.stats,
+          bestWineScore: Math.max(state.stats.bestWineScore, finalScore),
+          totalMoney: state.stats.totalMoney + revenue,
+          experience: state.stats.experience + Math.floor(finalScore / 10)
+        },
+        ui: {
+          ...state.ui,
+          notifications: addNotification(
+            state.ui.notifications,
+            `🏆 ${action.name}が完成！スコア: ${finalScore}点`,
+            'success'
+          )
+        }
+      };
+
+    case 'BUY_RESOURCES':
+      const costs = { money: 0, water: 2, fertilizer: 5, pesticide: 10 };
+      const cost = costs[action.resource] * action.amount;
+
+      if (state.resources.money < cost) {
+        return {
+          ...state,
+          ui: {
+            ...state.ui,
+            notifications: addNotification(
+              state.ui.notifications,
+              '資金が不足しています！',
+              'error'
+            )
+          }
+        };
+      }
+
+      return {
+        ...state,
+        resources: {
+          ...state.resources,
+          money: state.resources.money - cost,
+          [action.resource]: state.resources[action.resource] + action.amount
+        }
+      };
+
+    case 'SET_GAME_SPEED':
+      return {
+        ...state,
+        ui: { ...state.ui, gameSpeed: action.speed }
+      };
+
+    case 'TOGGLE_WEATHER_DETAIL':
+      return {
+        ...state,
+        ui: { ...state.ui, showWeatherDetail: !state.ui.showWeatherDetail }
+      };
+
+    case 'DISMISS_NOTIFICATION':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          notifications: state.ui.notifications.filter(n => n.id !== action.id)
+        }
+      };
+
+    case 'RESET_GAME':
+      return initialState;
+
+    default:
+      return state;
+  }
+}
+
+// メインコンポーネント
+interface VineyardSimulatorProps {
+  onClose: () => void;
+}
+
+const VineyardSimulator: React.FC<VineyardSimulatorProps> = ({ onClose }) => {
+  const [state, dispatch] = useReducer(gameReducer, initialState);
+
+  // useCallbackでアクションをメモ化
+  const startGame = useCallback(() => {
+    dispatch({ type: 'START_GAME' });
+  }, []);
+
+  const plantGrape = useCallback((variety: GrapeVariety) => {
+    dispatch({ type: 'PLANT_GRAPE', variety });
+  }, []);
+
+  const advanceTime = useCallback(() => {
+    dispatch({ type: 'ADVANCE_TIME' });
+  }, []);
+
+  const waterPlants = useCallback((amount: number) => {
+    dispatch({ type: 'WATER_PLANTS', amount });
+  }, []);
+
+  const applyFertilizer = useCallback((amount: number) => {
+    dispatch({ type: 'APPLY_FERTILIZER', amount });
+  }, []);
+
+  const harvestGrapes = useCallback(() => {
+    dispatch({ type: 'HARVEST_GRAPES' });
+  }, []);
+
+  const startFermentation = useCallback((style: WineStyle) => {
+    dispatch({ type: 'START_FERMENTATION', style });
+  }, []);
+
+  const completeWine = useCallback((name: string) => {
+    dispatch({ type: 'COMPLETE_WINE', name });
+  }, []);
+
+  const resetGame = useCallback(() => {
+    dispatch({ type: 'RESET_GAME' });
+  }, []);
+
+  // 自動時間進行
+  useEffect(() => {
+    if (state.phase === 'growing' || state.phase === 'harvest') {
+      const interval = setInterval(() => {
+        advanceTime();
+      }, 2000 / state.ui.gameSpeed); // ゲームスピードに応じて調整
+
+      return () => clearInterval(interval);
+    }
+  }, [state.phase, state.ui.gameSpeed, advanceTime]);
+
+  // 天候アイコン
+  const getWeatherEmoji = (weather: WeatherType) => {
+    const emojis = {
+      sunny: '☀️',
+      cloudy: '☁️',
+      rainy: '🌧️',
+      stormy: '⛈️',
+      snowy: '❄️',
+      hot: '🔥',
+      cold: '🧊'
+    };
+    return emojis[weather];
+  };
+
+  return (
+    <div className="vineyard-simulator-overlay">
+      <div className="vineyard-simulator">
+        {/* ヘッダー */}
+        <div className="game-header">
+          <h2>🍇 ぶどう畑シミュレーター</h2>
+          <div className="game-info">
+            <span>年: {state.year}</span>
+            <span>日: {state.day}</span>
+            <span>{state.season}</span>
+            <span>{getWeatherEmoji(state.weather.current)}</span>
+          </div>
+          <button onClick={onClose} className="close-btn">✕</button>
+        </div>
+
+        {/* 通知エリア */}
+        {state.ui.notifications.length > 0 && (
+          <div className="notifications">
+            {state.ui.notifications.map(notification => (
+              <div
+                key={notification.id}
+                className={`notification ${notification.type}`}
+                onClick={() => dispatch({ type: 'DISMISS_NOTIFICATION', id: notification.id })}
+              >
+                {notification.message}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ゲームフェーズ別コンテンツ */}
+        <div className="game-content">
+          {/* セットアップフェーズ */}
+          {state.phase === 'setup' && (
+            <div className="setup-phase">
+              <h3>🎮 ゲームスタート</h3>
+              <p>ぶどうを育ててワインを作りましょう！</p>
+              <button onClick={startGame} className="start-btn">
+                ゲーム開始
+              </button>
+            </div>
+          )}
+
+          {/* 植え付けフェーズ */}
+          {state.phase === 'planting' && (
+            <div className="planting-phase">
+              <h3>🌱 ぶどうの品種を選んでください</h3>
+              <div className="grape-varieties">
+                {grapeVarieties.map(variety => (
+                  <div key={variety.id} className="variety-card">
+                    <div className="variety-header">
+                      <span className="variety-emoji">{variety.emoji}</span>
+                      <h4>{variety.name}</h4>
+                    </div>
+                    <div className="variety-stats">
+                      <p>成長期間: {variety.growthTime}日</p>
+                      <p>水分需要: {'💧'.repeat(variety.waterNeeds)}</p>
+                      <p>病気耐性: {'🛡️'.repeat(variety.diseaseResistance)}</p>
+                      <p>価格: ¥{variety.price.toLocaleString()}</p>
+                    </div>
+                    <button
+                      onClick={() => plantGrape(variety)}
+                      disabled={state.resources.money < variety.price}
+                      className="plant-btn"
+                    >
+                      植える
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 成長フェーズ */}
+          {state.phase === 'growing' && (
+            <div className="growing-phase">
+              <div className="vineyard-status">
+                <h3>🍇 {state.vineyard.variety?.name}の成長状況</h3>
+                <div className="status-bars">
+                  <div className="status-item">
+                    <label>成長度: {state.vineyard.growth.toFixed(1)}%</label>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-fill growth"
+                        style={{ width: `${state.vineyard.growth}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="status-item">
+                    <label>健康度: {state.vineyard.health.toFixed(1)}%</label>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-fill health"
+                        style={{ width: `${state.vineyard.health}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="status-item">
+                    <label>水分レベル: {state.vineyard.waterLevel.toFixed(1)}%</label>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-fill water"
+                        style={{ width: `${state.vineyard.waterLevel}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="status-item">
+                    <label>肥料レベル: {state.vineyard.fertilizer.toFixed(1)}%</label>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-fill fertilizer"
+                        style={{ width: `${state.vineyard.fertilizer}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="actions">
+                <h4>🔧 ケア</h4>
+                <div className="action-buttons">
+                  <button
+                    onClick={() => waterPlants(20)}
+                    disabled={state.resources.water < 20}
+                    className="action-btn water"
+                  >
+                    💧 水やり (20)
+                  </button>
+                  <button
+                    onClick={() => applyFertilizer(10)}
+                    disabled={state.resources.fertilizer < 10}
+                    className="action-btn fertilizer"
+                  >
+                    🌿 肥料 (10)
+                  </button>
+                  <button
+                    onClick={advanceTime}
+                    className="action-btn time"
+                  >
+                    ⏭️ 時間を進める
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 収穫フェーズ */}
+          {state.phase === 'harvest' && (
+            <div className="harvest-phase">
+              <h3>🍇 収穫の時期です！</h3>
+              <p>ぶどうが十分に成長しました。収穫してワインを作りましょう。</p>
+              <button onClick={harvestGrapes} className="harvest-btn">
+                🍇 収穫する
+              </button>
+            </div>
+          )}
+
+          {/* ワイン作りフェーズ */}
+          {state.phase === 'winemaking' && (
+            <div className="winemaking-phase">
+              <div className="harvest-results">
+                <h3>📊 収穫結果</h3>
+                <div className="harvest-stats">
+                  <div className="stat">
+                    <strong>収穫量:</strong> {state.harvest.quantity}kg
+                  </div>
+                  <div className="stat">
+                    <strong>品質:</strong> {state.harvest.quality.toFixed(1)}%
+                  </div>
+                  <div className="stat">
+                    <strong>糖度:</strong> {state.harvest.sugarContent.toFixed(1)}°Brix
+                  </div>
+                  <div className="stat">
+                    <strong>酸度:</strong> {state.harvest.acidity.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+
+              <div className="wine-style-selection">
+                <h4>🍷 ワインスタイルを選択</h4>
+                <div className="wine-styles">
+                  {state.vineyard.variety?.wineTypes.map(style => (
+                    <button
+                      key={style}
+                      onClick={() => startFermentation(style)}
+                      className="wine-style-btn"
+                    >
+                      {style === 'dry' ? '🍷 辛口' :
+                       style === 'sweet' ? '🍯 甘口' :
+                       style === 'sparkling' ? '🥂 スパークリング' :
+                       style === 'fortified' ? '🛡️ 酒精強化' :
+                       '🧊 アイスワイン'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {state.wine.style && (
+                <div className="wine-completion">
+                  <h4>✨ ワイン完成</h4>
+                  <input
+                    type="text"
+                    placeholder="ワインの名前を入力..."
+                    className="wine-name-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const target = e.target as HTMLInputElement;
+                        if (target.value.trim()) {
+                          completeWine(target.value.trim());
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.querySelector('.wine-name-input') as HTMLInputElement;
+                      if (input?.value.trim()) {
+                        completeWine(input.value.trim());
+                      }
+                    }}
+                    className="complete-wine-btn"
+                  >
+                    🍷 ワイン完成
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 完成フェーズ */}
+          {state.phase === 'completed' && (
+            <div className="completed-phase">
+              <div className="wine-results">
+                <h3>🎉 ワイン完成！</h3>
+                <div className="wine-card">
+                  <h4>🍷 {state.wine.name}</h4>
+                  <div className="wine-score">
+                    <strong>最終スコア: {state.wine.score}点</strong>
+                  </div>
+                  <div className="wine-details">
+                    <p>品種: {state.vineyard.variety?.name}</p>
+                    <p>スタイル: {state.wine.style}</p>
+                    <p>品質: {state.wine.finalQuality.toFixed(1)}%</p>
+                  </div>
+                </div>
+
+                <div className="game-stats">
+                  <h4>📊 統計</h4>
+                  <div className="stats-grid">
+                    <div className="stat">総収穫: {state.stats.totalHarvests}回</div>
+                    <div className="stat">最高スコア: {state.stats.bestWineScore}点</div>
+                    <div className="stat">総収益: ¥{state.stats.totalMoney.toLocaleString()}</div>
+                    <div className="stat">経験値: {state.stats.experience}</div>
+                  </div>
+                </div>
+
+                <button onClick={resetGame} className="new-game-btn">
+                  🔄 新しいゲームを始める
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* リソース表示 */}
+        <div className="resource-panel">
+          <div className="resource-item">
+            <span>💰</span>
+            <span>¥{state.resources.money.toLocaleString()}</span>
+          </div>
+          <div className="resource-item">
+            <span>💧</span>
+            <span>{state.resources.water}</span>
+          </div>
+          <div className="resource-item">
+            <span>🌿</span>
+            <span>{state.resources.fertilizer}</span>
+          </div>
+          <div className="resource-item">
+            <span>🛡️</span>
+            <span>{state.resources.pesticide}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VineyardSimulator;

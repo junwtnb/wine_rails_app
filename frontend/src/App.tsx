@@ -14,6 +14,7 @@ import UserActivityTracker from './components/UserActivityTracker';
 import SearchHistoryPanel from './components/SearchHistoryPanel';
 import UserSettingsPanel from './components/UserSettingsPanel';
 import AdvancedWineForm from './components/AdvancedWineForm';
+import VineyardSimulator from './components/VineyardSimulator';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider, useTheme, getThemeIcon, getThemeName } from './contexts/ThemeContext';
 
@@ -56,6 +57,7 @@ function AppContent() {
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showAdvancedForm, setShowAdvancedForm] = useState(false);
+  const [showVineyardGame, setShowVineyardGame] = useState(false);
 
   const handleSearchResult = (result: WineResponse, query: string = '', source: 'search' | 'random' | 'quiz' = 'search') => {
     dispatch({ type: 'SET_WINE_RESULT', payload: result });
@@ -133,6 +135,13 @@ function AppContent() {
               title="検索履歴"
             >
               🕒
+            </button>
+            <button
+              onClick={() => setShowVineyardGame(true)}
+              className="header-btn"
+              title="ぶどう畑ゲーム"
+            >
+              🍇
             </button>
             <button
               onClick={() => setShowUserSettings(true)}
@@ -227,6 +236,10 @@ function AppContent() {
           onSubmit={handleAdvancedFormSubmit}
           onCancel={() => setShowAdvancedForm(false)}
         />
+      )}
+
+      {showVineyardGame && (
+        <VineyardSimulator onClose={() => setShowVineyardGame(false)} />
       )}
 
       {/* Scroll to top button */}

@@ -3481,3 +3481,590 @@
     text-align: center;
   }
 }
+
+/* Vineyard Simulator Styles */
+.vineyard-simulator-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.vineyard-simulator {
+  background: white;
+  border-radius: 16px;
+  max-width: 900px;
+  max-height: 95vh;
+  width: 100%;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .vineyard-simulator,
+.theme-dark .vineyard-simulator {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+.game-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.game-content {
+  padding: 2rem;
+}
+
+/* Game States */
+.game-setup {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.game-setup h3 {
+  margin-bottom: 2rem;
+  color: #667eea;
+  font-size: 1.5rem;
+}
+
+[data-theme="dark"] .game-setup h3,
+.theme-dark .game-setup h3 {
+  color: #9ca3f5;
+}
+
+.setup-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.setup-option {
+  padding: 1.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+[data-theme="dark"] .setup-option,
+.theme-dark .setup-option {
+  background: #3d3d3d;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+.setup-option:hover {
+  border-color: #667eea;
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+}
+
+[data-theme="dark"] .setup-option:hover,
+.theme-dark .setup-option:hover {
+  background: #4d4d4d;
+  border-color: #9ca3f5;
+}
+
+.setup-option.selected {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.option-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.option-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.option-description {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.start-game-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 2rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.start-game-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Game Playing States */
+.game-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-panel {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+[data-theme="dark"] .status-panel,
+.theme-dark .status-panel {
+  background: #3d3d3d;
+}
+
+.status-panel h4 {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-theme="dark"] .status-panel h4,
+.theme-dark .status-panel h4 {
+  color: #9ca3f5;
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.status-value {
+  font-weight: bold;
+  color: #667eea;
+}
+
+[data-theme="dark"] .status-value,
+.theme-dark .status-value {
+  color: #9ca3f5;
+}
+
+/* Progress Bars */
+.progress-container {
+  margin: 0.25rem 0;
+}
+
+.progress-bar-game {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .progress-bar-game,
+.theme-dark .progress-bar-game {
+  background: #555;
+}
+
+.progress-fill-game {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Game Actions */
+.game-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.game-action-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.game-action-btn:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.game-action-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .game-action-btn:disabled,
+.theme-dark .game-action-btn:disabled {
+  background: #666;
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #4CAF50;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  animation: slideInRight 0.3s ease, slideOutRight 0.3s ease 2.7s;
+  max-width: 300px;
+}
+
+.notification.warning {
+  background: #ff9800;
+}
+
+.notification.error {
+  background: #f44336;
+}
+
+.notification.info {
+  background: #2196F3;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Resource Display */
+.resources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.resource-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .resource-item,
+.theme-dark .resource-item {
+  background: #3d3d3d;
+}
+
+.resource-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.resource-amount {
+  font-weight: bold;
+  color: #667eea;
+}
+
+[data-theme="dark"] .resource-amount,
+.theme-dark .resource-amount {
+  color: #9ca3f5;
+}
+
+/* Grapes Grid */
+.grapes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f0f8f0;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+[data-theme="dark"] .grapes-grid,
+.theme-dark .grapes-grid {
+  background: #2d3d2d;
+}
+
+.grape-plot {
+  width: 60px;
+  height: 60px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.5rem;
+}
+
+.grape-plot:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.grape-plot.planted {
+  border: 2px solid #4CAF50;
+  background: #e8f5e8;
+}
+
+[data-theme="dark"] .grape-plot.planted,
+.theme-dark .grape-plot.planted {
+  background: #2d4d2d;
+}
+
+.grape-plot.ready {
+  border: 2px solid #ff9800;
+  background: #fff3e0;
+  animation: pulse 2s infinite;
+}
+
+[data-theme="dark"] .grape-plot.ready,
+.theme-dark .grape-plot.ready {
+  background: #4d3d2d;
+}
+
+/* Game Results */
+.game-results {
+  text-align: center;
+  padding: 2rem;
+}
+
+.final-score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #667eea;
+  margin: 1rem 0;
+}
+
+[data-theme="dark"] .final-score,
+.theme-dark .final-score {
+  color: #9ca3f5;
+}
+
+.results-summary {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+[data-theme="dark"] .results-summary,
+.theme-dark .results-summary {
+  background: #3d3d3d;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.summary-item {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .summary-item,
+.theme-dark .summary-item {
+  background: #4d4d4d;
+}
+
+.summary-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+[data-theme="dark"] .summary-value,
+.theme-dark .summary-value {
+  color: #9ca3f5;
+}
+
+.summary-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+}
+
+.play-again-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 1rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.play-again-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Mobile Responsiveness for Vineyard Simulator */
+@media (max-width: 768px) {
+  .vineyard-simulator {
+    margin: 0.5rem;
+    max-height: 98vh;
+  }
+
+  .game-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .game-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .game-content {
+    padding: 1.5rem;
+  }
+
+  .game-setup {
+    padding: 2rem 1rem;
+  }
+
+  .setup-options {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .game-status {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .game-actions {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .grapes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 0.3rem;
+    padding: 0.75rem;
+  }
+
+  .grape-plot {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+
+  .resources-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .final-score {
+    font-size: 2.5rem;
+  }
+
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
