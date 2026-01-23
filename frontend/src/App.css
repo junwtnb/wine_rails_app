@@ -4068,3 +4068,136 @@
     max-width: none;
   }
 }
+
+/* Additional styles for enhanced vineyard game */
+.plot-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.plot-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.action-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.water-btn {
+  background: #4fc3f7;
+}
+
+.water-btn:hover:not(:disabled) {
+  background: #29b6f6;
+}
+
+.fertilizer-btn {
+  background: #81c784;
+}
+
+.fertilizer-btn:hover:not(:disabled) {
+  background: #66bb6a;
+}
+
+.plot-status {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.progress-mini {
+  height: 3px;
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+.progress-mini.water {
+  background: #2196F3;
+}
+
+.progress-mini.fertilizer {
+  background: #4CAF50;
+}
+
+.progress-mini.health {
+  background: #FF5722;
+}
+
+.grape-plot.sick {
+  border-color: #f44336;
+  background: #ffebee;
+  animation: shake 0.5s infinite;
+}
+
+[data-theme="dark"] .grape-plot.sick,
+.theme-dark .grape-plot.sick {
+  background: #4d2d2d;
+}
+
+.grape-plot.thirsty {
+  border-color: #ff9800;
+  background: #fff3e0;
+}
+
+[data-theme="dark"] .grape-plot.thirsty,
+.theme-dark .grape-plot.thirsty {
+  background: #4d3d2d;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.game-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.game-info span {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .plot-container {
+    gap: 1px;
+  }
+
+  .action-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+
+  .progress-mini {
+    height: 2px;
+  }
+
+  .game-info {
+    font-size: 0.8rem;
+    gap: 0.3rem;
+  }
+}

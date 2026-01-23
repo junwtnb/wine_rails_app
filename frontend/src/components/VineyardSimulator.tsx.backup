@@ -1,5 +1,18 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
 
+// 個別プロットの型定義
+interface GrapePlot {
+  id: number;
+  variety: GrapeVariety | null;
+  plantDate: number | null;
+  growth: number; // 0-100
+  health: number; // 0-100
+  waterLevel: number; // 0-100
+  fertilizer: number; // 0-100
+  isPlanted: boolean;
+  canHarvest: boolean;
+}
+
 // ゲーム状態の型定義
 interface GameState {
   phase: 'setup' | 'planting' | 'growing' | 'harvest' | 'winemaking' | 'completed';
@@ -7,15 +20,10 @@ interface GameState {
   season: 'spring' | 'summer' | 'autumn' | 'winter';
   year: number;
 
-  // ぶどう畑の状態
+  // ぶどう畑の状態 - 複数のプロットを管理
   vineyard: {
-    variety: GrapeVariety | null;
-    plantDate: number | null;
-    growth: number; // 0-100
-    health: number; // 0-100
-    waterLevel: number; // 0-100
-    fertilizer: number; // 0-100
-    diseases: Disease[];
+    plots: GrapePlot[];
+    size: number; // プロット数
   };
 
   // 天候システム
@@ -106,6 +114,10 @@ interface Notification {
 type GameAction =
   | { type: 'START_GAME' }
   | { type: 'PLANT_GRAPE'; variety: GrapeVariety }
+  | { type: 'PLANT_GRAPE_IN_PLOT'; plotId: number; variety: GrapeVariety }
+  | { type: 'HARVEST_PLOT'; plotId: number }
+  | { type: 'WATER_PLOT'; plotId: number; amount: number }
+  | { type: 'FERTILIZE_PLOT'; plotId: number; amount: number }
   | { type: 'ADVANCE_TIME' }
   | { type: 'WATER_PLANTS'; amount: number }
   | { type: 'APPLY_FERTILIZER'; amount: number }
@@ -177,13 +189,18 @@ const initialState: GameState = {
   season: 'spring',
   year: 1,
   vineyard: {
-    variety: null,
-    plantDate: null,
-    growth: 0,
-    health: 100,
-    waterLevel: 50,
-    fertilizer: 50,
-    diseases: []
+    plots: Array.from({ length: 12 }, (_, i) => ({
+      id: i + 1,
+      variety: null,
+      plantDate: null,
+      growth: 0,
+      health: 100,
+      waterLevel: 50,
+      fertilizer: 50,
+      isPlanted: false,
+      canHarvest: false
+    })),
+    size: 12
   },
   weather: {
     current: 'sunny',
@@ -736,6 +753,34 @@ const VineyardSimulator: React.FC<VineyardSimulatorProps> = ({ onClose }) => {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              {/* ブドウ畑グリッド表示 */}
+              <div className="vineyard-grid-section">
+                <h4>🍇 ぶどう畑 - 空いているマスをクリックして植えてください</h4>
+                <div className="grapes-grid">
+                  {state.vineyard.plots.map(plot => (
+                    <div
+                      key={plot.id}
+                      className={`grape-plot ${plot.isPlanted ? 'planted' : 'empty'} ${plot.canHarvest ? 'ready' : ''}`}
+                      onClick={() => {
+                        if (!plot.isPlanted) {
+                          // TODO: プロットに植える機能を実装
+                          console.log(`Plot ${plot.id} clicked`);
+                        }
+                      }}
+                      title={
+                        plot.isPlanted
+                          ? `${plot.variety?.name} - 成長度: ${plot.growth}%`
+                          : '空き地 - クリックして植える'
+                      }
+                    >
+                      {plot.isPlanted ? (
+                        plot.canHarvest ? '🍇' : plot.variety?.emoji || '🌱'
+                      ) : '⬜'}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -14,7 +14,7 @@ import UserActivityTracker from './components/UserActivityTracker';
 import SearchHistoryPanel from './components/SearchHistoryPanel';
 import UserSettingsPanel from './components/UserSettingsPanel';
 import AdvancedWineForm from './components/AdvancedWineForm';
-import VineyardSimulator from './components/VineyardSimulator';
+import SimpleVineyardGame from './components/SimpleVineyardGame';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider, useTheme, getThemeIcon, getThemeName } from './contexts/ThemeContext';
 
@@ -239,7 +239,7 @@ function AppContent() {
       )}
 
       {showVineyardGame && (
-        <VineyardSimulator onClose={() => setShowVineyardGame(false)} />
+        <SimpleVineyardGame onClose={() => setShowVineyardGame(false)} />
       )}
 
       {/* Scroll to top button */}
