@@ -4201,3 +4201,306 @@
     gap: 0.3rem;
   }
 }
+
+/* ワイン産地選択スタイル */
+.region-selection {
+  padding: 1rem;
+}
+
+.regions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.region-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.region-card:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.region-card.selected {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+[data-theme="dark"] .region-card,
+.theme-dark .region-card {
+  background: #2d2d2d;
+  border-color: #444;
+}
+
+[data-theme="dark"] .region-card:hover,
+.theme-dark .region-card:hover,
+[data-theme="dark"] .region-card.selected,
+.theme-dark .region-card.selected {
+  background: #3d3d3d;
+  border-color: #8b5cf6;
+}
+
+.region-header h4 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+[data-theme="dark"] .region-header h4,
+.theme-dark .region-header h4 {
+  color: #e0e0e0;
+}
+
+.region-country {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.region-info {
+  margin: 0.75rem 0;
+}
+
+.climate {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+}
+
+[data-theme="dark"] .climate,
+.theme-dark .climate {
+  color: #b0b0b0;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+.grape-varieties strong {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+[data-theme="dark"] .grape-varieties strong,
+.theme-dark .grape-varieties strong {
+  color: #b0b0b0;
+}
+
+.varieties-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.variety-tag {
+  background: #e8e8e8;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .variety-tag,
+.theme-dark .variety-tag {
+  background: #444;
+  color: #e0e0e0;
+}
+
+.more {
+  color: #666;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+[data-theme="dark"] .more,
+.theme-dark .more {
+  color: #b0b0b0;
+}
+
+.region-details {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+[data-theme="dark"] .region-details,
+.theme-dark .region-details {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.region-details h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+[data-theme="dark"] .region-details h4,
+.theme-dark .region-details h4 {
+  color: #e0e0e0;
+}
+
+.climate-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.season-info {
+  background: #ffffff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+[data-theme="dark"] .season-info,
+.theme-dark .season-info {
+  background: #333;
+  border-color: #555;
+}
+
+.season-info h5 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+[data-theme="dark"] .season-info h5,
+.theme-dark .season-info h5 {
+  color: #e0e0e0;
+}
+
+.season-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.current-region-info {
+  background: #f3f0ff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #8b5cf6;
+}
+
+[data-theme="dark"] .current-region-info,
+.theme-dark .current-region-info {
+  background: #2a2538;
+  border-color: #8b5cf6;
+}
+
+.current-region-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: #8b5cf6;
+}
+
+.current-region-info p {
+  margin: 0 0 0.75rem 0;
+  opacity: 0.9;
+}
+
+.change-region-btn,
+.start-planting-btn {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.change-region-btn:hover,
+.start-planting-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.change-region-btn {
+  background: #6366f1;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+.change-region-btn:hover {
+  background: #5856eb;
+}
+
+.grape-type-btn {
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.grape-type-btn:hover {
+  border-color: #8b5cf6;
+  background: #f8f7ff;
+}
+
+.grape-type-btn.selected {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .grape-type-btn,
+.theme-dark .grape-type-btn {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .grape-type-btn:hover,
+.theme-dark .grape-type-btn:hover,
+[data-theme="dark"] .grape-type-btn.selected,
+.theme-dark .grape-type-btn.selected {
+  background: #3d3d3d;
+  border-color: #8b5cf6;
+}
+
+@media (max-width: 768px) {
+  .regions-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .climate-info {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .grape-types {
+    grid-template-columns: 1fr;
+  }
+
+  .region-card {
+    padding: 0.75rem;
+  }
+}
