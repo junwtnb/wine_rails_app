@@ -12,6 +12,32 @@ interface Plot {
   fertilizer: number; // 0-100
   health: number; // 0-100
   canHarvest: boolean;
+  disease: string | null; // 病気ID
+  diseaseDay: number; // 病気になった日
+  lastDisaster: string | null; // 最後に受けた災害ID
+  disasterDay: number; // 災害を受けた日
+}
+
+interface Disease {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  healthDamage: number; // 1日あたりの健康度ダメージ
+  spreadChance: number; // 他のプロットへの感染確率
+  treatmentCost: number; // 治療費
+  cureDays: number; // 治療に必要な日数
+}
+
+interface Disaster {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  damage: string;
+  probability: number; // 1日あたりの発生確率
+  affectedPlots: number; // 影響するプロット数
+  damageCost: number; // 復旧費用
 }
 
 interface Wine {
@@ -57,6 +83,72 @@ interface WineRegion {
 interface SimpleVineyardGameProps {
   onClose: () => void;
 }
+
+const DISEASES: Disease[] = [
+  {
+    id: 'powdery_mildew',
+    name: 'うどんこ病',
+    emoji: '🦠',
+    description: '葉に白い粉状の症状が現れる病気',
+    healthDamage: 3,
+    spreadChance: 0.15,
+    treatmentCost: 150,
+    cureDays: 3
+  },
+  {
+    id: 'black_rot',
+    name: '黒腐病',
+    emoji: '🖤',
+    description: '実が黒く腐る深刻な病気',
+    healthDamage: 5,
+    spreadChance: 0.1,
+    treatmentCost: 200,
+    cureDays: 5
+  },
+  {
+    id: 'phylloxera',
+    name: 'フィロキセラ',
+    emoji: '🐛',
+    description: '根を食べる害虫、最悪の場合全滅',
+    healthDamage: 8,
+    spreadChance: 0.08,
+    treatmentCost: 300,
+    cureDays: 7
+  }
+];
+
+const DISASTERS: Disaster[] = [
+  {
+    id: 'frost',
+    name: '霜害',
+    emoji: '❄️',
+    description: '春の遅霜で新芽が凍結',
+    damage: '成長が50%減少',
+    probability: 0.02,
+    affectedPlots: 6,
+    damageCost: 200
+  },
+  {
+    id: 'hail',
+    name: '雹害',
+    emoji: '🌨️',
+    description: '雹で葉や実が傷つく',
+    damage: '健康度が30減少',
+    probability: 0.015,
+    affectedPlots: 4,
+    damageCost: 150
+  },
+  {
+    id: 'drought',
+    name: '干ばつ',
+    emoji: '☀️',
+    description: '極度の乾燥で水不足',
+    damage: '水分レベルが半減',
+    probability: 0.01,
+    affectedPlots: 8,
+    damageCost: 300
+  }
+];
 
 const GAME_GOALS = [
   { id: 'first_harvest', title: '初回収穫', description: 'ブドウを1本収穫する', target: 1, current: 0, completed: false, reward: 200, type: 'harvest' as const },
@@ -213,7 +305,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       waterLevel: 50,
       fertilizer: 30,
       health: 100,
-      canHarvest: false
+      canHarvest: false,
+      disease: null,
+      diseaseDay: 0,
+      lastDisaster: null,
+      disasterDay: 0
     }))
   );
 
@@ -259,6 +355,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [goals, setGoals] = useState<GameGoal[]>(GAME_GOALS);
   const [totalHarvested, setTotalHarvested] = useState(0);
   const [gameWon, setGameWon] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState('');
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -290,7 +388,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             waterLevel: 50,
             fertilizer: 30,
             health: 100,
-            canHarvest: false
+            canHarvest: false,
+            disease: null,
+            diseaseDay: 0,
+            lastDisaster: null,
+            disasterDay: 0
           }
         : plot
     ));
@@ -384,8 +486,36 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       // 肥料の消費
       const fertilizerConsumption = 0.5;
 
-      // 健康度の変化（ランダムなストレス）
-      const healthChange = Math.random() < 0.1 ? -5 : 1; // 10%で病気、90%で回復
+      // 病気システム
+      let healthChange = 1; // 基本回復
+      let diseaseGrowthPenalty = 1; // 成長ペナルティなし
+
+      if (plot.disease) {
+        // 既存の病気の処理
+        const disease = DISEASES.find(d => d.id === plot.disease);
+        if (disease) {
+          healthChange = -disease.healthDamage;
+          diseaseGrowthPenalty = 0.5; // 病気で成長半減
+        }
+      } else {
+        // 新しい病気の発生（健康度が低いほど確率上昇）
+        const diseaseChance = (100 - plot.health) / 1000; // 健康度50なら5%
+        if (Math.random() < diseaseChance) {
+          const randomDisease = DISEASES[Math.floor(Math.random() * DISEASES.length)];
+          return {
+            ...plot,
+            disease: randomDisease.id,
+            diseaseDay: day,
+            growth: Math.min(100, plot.growth + (growthIncrease * diseaseGrowthPenalty)),
+            waterLevel: Math.max(0, plot.waterLevel - waterChange),
+            fertilizer: Math.max(0, plot.fertilizer - fertilizerConsumption),
+            health: Math.min(100, Math.max(0, plot.health + healthChange))
+          };
+        }
+      }
+
+      // 成長に病気ペナルティを適用
+      growthIncrease *= diseaseGrowthPenalty;
 
       return {
         ...plot,
@@ -396,9 +526,18 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       };
     }));
 
+    // 災害チェック
+    checkRandomDisasters();
+
+    // 病気の拡散チェック
+    checkDiseaseSpread();
+
     // リソースの自動補充（少量）
     setWater(prev => Math.min(100, prev + 2));
     setFertilizer(prev => Math.min(50, prev + 1));
+
+    // ゲームオーバーチェック
+    checkGameOver();
   }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex]);
 
   // ゴール進捗を更新する関数
@@ -487,7 +626,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             canHarvest: false,
             waterLevel: 50,
             fertilizer: 30,
-            health: 100
+            health: 100,
+            disease: null,
+            diseaseDay: 0,
+            lastDisaster: null,
+            disasterDay: 0
           }
         : p
     ));
@@ -507,8 +650,115 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     alert(`「${wine.name}」を${finalValue}円で売却しました！`);
   }, [wines]);
 
+  // 災害チェック
+  const checkRandomDisasters = useCallback(() => {
+    if (gameOver) return;
+
+    DISASTERS.forEach(disaster => {
+      if (Math.random() < disaster.probability) {
+        const affectedPlots = plots
+          .filter(p => p.isPlanted)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, disaster.affectedPlots);
+
+        if (affectedPlots.length === 0) return;
+
+        const disasterCost = disaster.damageCost;
+        const canAfford = money >= disasterCost;
+
+        if (window.confirm(`🚨 ${disaster.emoji} ${disaster.name}が発生！\n${disaster.description}\n\n復旧費用: ${disasterCost}円\n現在の所持金: ${money}円\n\n${canAfford ? '復旧費用を支払いますか？' : '所持金が足りません！畑が被害を受けます。'}`)) {
+          if (canAfford) {
+            setMoney(prev => prev - disasterCost);
+            alert('復旧完了！');
+            return;
+          }
+        }
+
+        // 災害の被害を適用
+        setPlots(prev => prev.map(plot => {
+          if (affectedPlots.some(ap => ap.id === plot.id)) {
+            switch (disaster.id) {
+              case 'frost':
+                return {
+                  ...plot,
+                  growth: Math.max(0, plot.growth * 0.5),
+                  lastDisaster: disaster.id,
+                  disasterDay: day
+                };
+              case 'hail':
+                return {
+                  ...plot,
+                  health: Math.max(0, plot.health - 30),
+                  lastDisaster: disaster.id,
+                  disasterDay: day
+                };
+              case 'drought':
+                return {
+                  ...plot,
+                  waterLevel: Math.max(0, plot.waterLevel * 0.5),
+                  lastDisaster: disaster.id,
+                  disasterDay: day
+                };
+              default:
+                return plot;
+            }
+          }
+          return plot;
+        }));
+
+        alert(`${disaster.emoji} ${disaster.name}により畑が被害を受けました...`);
+      }
+    });
+  }, [plots, money, gameOver]);
+
+  // 病気の拡散チェック
+  const checkDiseaseSpread = useCallback(() => {
+    if (gameOver) return;
+
+    setPlots(prev => prev.map(plot => {
+      if (!plot.isPlanted || plot.disease) return plot;
+
+      // 近くの病気のプロットから感染
+      const nearbyDiseased = prev.some(p => {
+        if (!p.disease || !p.isPlanted) return false;
+        const disease = DISEASES.find(d => d.id === p.disease);
+        return disease && Math.random() < disease.spreadChance;
+      });
+
+      if (nearbyDiseased) {
+        const spreadingDiseases = prev
+          .filter(p => p.disease)
+          .map(p => p.disease)
+          .filter(Boolean);
+
+        if (spreadingDiseases.length > 0) {
+          const randomDisease = spreadingDiseases[Math.floor(Math.random() * spreadingDiseases.length)];
+          return {
+            ...plot,
+            disease: randomDisease,
+            diseaseDay: day
+          };
+        }
+      }
+
+      return plot;
+    }));
+  }, [plots, day, gameOver]);
+
+  // ゲームオーバーチェック
+  const checkGameOver = useCallback(() => {
+    if (gameOver || gameWon) return;
+
+    if (money < 0) {
+      setGameOver(true);
+      setGameOverReason('所持金が0円を下回りました。経営破綻です...');
+    }
+  }, [money, gameOver, gameWon]);
+
   // ゲーム勝利判定
   const checkGameWin = useCallback(() => {
+    if (gameOver) return;
+
     const allGoalsCompleted = goals.filter(g => g.type !== 'money').every(g => g.completed);
     const moneyGoalsCompleted = goals.filter(g => g.type === 'money').some(g => g.completed);
 
@@ -516,7 +766,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       setGameWon(true);
       alert('おめでとうございます！すべてのゴールを達成しました！あなたは立派なワイン醸造家です！');
     }
-  }, [goals, gameWon]);
+  }, [goals, gameWon, gameOver]);
 
   const startRegionSelection = () => {
     setGamePhase('region_selection');
@@ -525,6 +775,34 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const startPlanting = () => {
     setGamePhase('planting');
   };
+
+  // 病気治療
+  const treatDisease = useCallback((plotId: number) => {
+    const plot = plots.find(p => p.id === plotId);
+    if (!plot || !plot.disease) return;
+
+    const disease = DISEASES.find(d => d.id === plot.disease);
+    if (!disease) return;
+
+    if (money < disease.treatmentCost) {
+      alert(`治療費が足りません！必要な金額: ${disease.treatmentCost}円`);
+      return;
+    }
+
+    setMoney(prev => prev - disease.treatmentCost);
+    setPlots(prev => prev.map(p =>
+      p.id === plotId
+        ? { ...p, disease: null, diseaseDay: 0 }
+        : p
+    ));
+
+    alert(`${disease.emoji} ${disease.name}を治療しました！費用: ${disease.treatmentCost}円`);
+  }, [plots, money]);
+
+  // ゲームリスタート
+  const restartGame = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   // マネーゴールをチェック
   React.useEffect(() => {
@@ -546,6 +824,17 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
   const getPlotDisplay = (plot: Plot) => {
     if (!plot.isPlanted) return '⬜';
+
+    // 最近の災害被害を優先表示（3日以内）
+    if (plot.lastDisaster && (day - plot.disasterDay) <= 3) {
+      const disaster = DISASTERS.find(d => d.id === plot.lastDisaster);
+      if (disaster) return disaster.emoji;
+    }
+
+    if (plot.disease) {
+      const disease = DISEASES.find(d => d.id === plot.disease);
+      return disease ? disease.emoji : '🤒';
+    }
     if (plot.growth >= 100) return '🍇';
     if (plot.growth >= 50) return '🌿';
     if (plot.health < 30) return '🤒'; // 病気
@@ -555,6 +844,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
   const getPlotClass = (plot: Plot) => {
     if (!plot.isPlanted) return 'grape-plot empty';
+
+    // 最近の災害被害（3日以内）
+    if (plot.lastDisaster && (day - plot.disasterDay) <= 3) {
+      return 'grape-plot disaster-damaged';
+    }
+
+    if (plot.disease) return 'grape-plot diseased';
     if (plot.growth >= 100) return 'grape-plot ready';
     if (plot.health < 30) return 'grape-plot sick';
     if (plot.waterLevel < 20) return 'grape-plot thirsty';
@@ -707,6 +1003,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
               )}
 
+              {gameOver && (
+                <div className="game-over">
+                  <h2>💀 ゲームオーバー</h2>
+                  <p>{gameOverReason}</p>
+                  <button onClick={restartGame} className="restart-btn">
+                    ゲームをリスタート
+                  </button>
+                </div>
+              )}
+
               <h3>🌱 ブドウを植えよう</h3>
 
               {/* 地域情報表示 */}
@@ -754,6 +1060,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                             ? `空き地 - クリックで${selectedGrapeType.name}を植える (¥${selectedGrapeType.price})`
                             : plot.growth >= 100
                             ? `収穫可能！クリックで収穫`
+                            : plot.disease
+                            ? `病気: ${DISEASES.find(d => d.id === plot.disease)?.name} - 治療費: ${DISEASES.find(d => d.id === plot.disease)?.treatmentCost}円`
+                            : plot.lastDisaster && (day - plot.disasterDay) <= 3
+                            ? `災害被害: ${DISASTERS.find(d => d.id === plot.lastDisaster)?.name} (${3 - (day - plot.disasterDay)}日前) - ${DISASTERS.find(d => d.id === plot.lastDisaster)?.damage}`
                             : `${REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType)?.name || 'ブドウ'} - 成長: ${Math.floor(plot.growth)}% / 水: ${Math.floor(plot.waterLevel)}% / 肥料: ${Math.floor(plot.fertilizer)}% / 健康: ${Math.floor(plot.health)}%`
                         }
                       >
@@ -762,28 +1072,43 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
                       {plot.isPlanted && plot.growth < 100 && (
                         <div className="plot-actions">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              waterPlot(plot.id);
-                            }}
-                            disabled={water < 10}
-                            className="action-btn water-btn"
-                            title="水やり (水 -10)"
-                          >
-                            💧
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              fertilizePlot(plot.id);
-                            }}
-                            disabled={fertilizer < 5}
-                            className="action-btn fertilizer-btn"
-                            title="肥料やり (肥料 -5)"
-                          >
-                            🌱
-                          </button>
+                          {plot.disease ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                treatDisease(plot.id);
+                              }}
+                              className="action-btn treat-btn"
+                              title={`病気治療: ${DISEASES.find(d => d.id === plot.disease)?.treatmentCost}円`}
+                            >
+                              💉
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  waterPlot(plot.id);
+                                }}
+                                disabled={water < 10}
+                                className="action-btn water-btn"
+                                title="水やり (水 -10)"
+                              >
+                                💧
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fertilizePlot(plot.id);
+                                }}
+                                disabled={fertilizer < 5}
+                                className="action-btn fertilizer-btn"
+                                title="肥料やり (肥料 -5)"
+                              >
+                                🌱
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
 

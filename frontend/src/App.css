@@ -4794,3 +4794,66 @@
     font-size: 1.5rem;
   }
 }
+
+/* 災害被害プロット */
+.grape-plot.disaster-damaged {
+  border: 2px solid #DC143C !important;
+  background: linear-gradient(45deg, #DC143C, #B22222) !important;
+  animation: disaster-shake 1s infinite;
+  box-shadow: 0 0 10px rgba(220, 20, 60, 0.5) !important;
+}
+
+@keyframes disaster-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* ゲームオーバースタイル */
+.game-over {
+  background: linear-gradient(135deg, #8B0000, #B22222);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 3px solid #DC143C;
+  box-shadow: 0 4px 20px rgba(220, 20, 60, 0.5);
+  margin: 1rem 0;
+}
+
+.game-over h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.restart-btn {
+  background: linear-gradient(45deg, #FF4500, #FF6347);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.restart-btn:hover {
+  background: linear-gradient(45deg, #FF6347, #FF7F50);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 69, 0, 0.4);
+}
+
+/* 治療ボタン */
+.action-btn.treat-btn {
+  background: linear-gradient(45deg, #228B22, #32CD32);
+  border: 2px solid #006400;
+  color: white;
+}
+
+.action-btn.treat-btn:hover {
+  background: linear-gradient(45deg, #32CD32, #90EE90);
+  border-color: #228B22;
+}
