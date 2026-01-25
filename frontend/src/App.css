@@ -4504,3 +4504,293 @@
     padding: 0.75rem;
   }
 }
+
+/* ゲームゴールとワインセラーのスタイル */
+.game-goals {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+[data-theme="dark"] .game-goals,
+.theme-dark .game-goals {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.game-goals h3 {
+  margin: 0 0 1rem 0;
+  color: #8b5cf6;
+  text-align: center;
+}
+
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.goal-item {
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.goal-item.completed {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+[data-theme="dark"] .goal-item,
+.theme-dark .goal-item {
+  background: #333;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .goal-item.completed,
+.theme-dark .goal-item.completed {
+  background: #064e3b;
+  border-color: #10b981;
+}
+
+.goal-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+[data-theme="dark"] .goal-title,
+.theme-dark .goal-title {
+  color: #e0e0e0;
+}
+
+.goal-description {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.goal-progress {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8b5cf6;
+}
+
+.goal-reward {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.goal-check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: #10b981;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.wine-cellar {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fef7ff;
+  border-radius: 8px;
+  border: 1px solid #d8b4fe;
+}
+
+[data-theme="dark"] .wine-cellar,
+.theme-dark .wine-cellar {
+  background: #2d1b37;
+  border-color: #8b5cf6;
+}
+
+.wine-cellar h3 {
+  margin: 0 0 1rem 0;
+  color: #8b5cf6;
+  text-align: center;
+}
+
+.wines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.wine-item {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.wine-item:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+[data-theme="dark"] .wine-item,
+.theme-dark .wine-item {
+  background: #333;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+.wine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.wine-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+[data-theme="dark"] .wine-header h4,
+.theme-dark .wine-header h4 {
+  color: #e0e0e0;
+}
+
+.wine-age {
+  font-size: 0.8rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .wine-age,
+.theme-dark .wine-age {
+  background: #4a4a4a;
+  color: #b0b0b0;
+}
+
+.wine-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.wine-quality {
+  font-size: 0.85rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.wine-value {
+  font-size: 0.85rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.sell-wine-btn {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.sell-wine-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.game-won {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  animation: celebration 1s ease-in-out;
+}
+
+[data-theme="dark"] .game-won,
+.theme-dark .game-won {
+  background: linear-gradient(135deg, #451a03, #78350f);
+  border-color: #f59e0b;
+}
+
+.game-won h2 {
+  margin: 0 0 1rem 0;
+  color: #d97706;
+  font-size: 2rem;
+}
+
+.game-won p {
+  margin: 0;
+  color: #92400e;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .game-won p,
+.theme-dark .game-won p {
+  color: #fbbf24;
+}
+
+@keyframes celebration {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.season-info {
+  font-size: 0.85rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .season-info,
+.theme-dark .season-info {
+  background: #1e293b;
+  color: #7dd3fc;
+}
+
+@media (max-width: 768px) {
+  .goals-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .wines-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .wine-header {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .game-won {
+    padding: 1.5rem;
+  }
+
+  .game-won h2 {
+    font-size: 1.5rem;
+  }
+}

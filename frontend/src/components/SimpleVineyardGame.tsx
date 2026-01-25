@@ -7,9 +7,33 @@ interface Plot {
   grapeType: string;
   growth: number; // 0-100
   plantedDay: number;
+  plantedSeason: number; // 0-3 (春夏秋冬)
   waterLevel: number; // 0-100
   fertilizer: number; // 0-100
   health: number; // 0-100
+  canHarvest: boolean;
+}
+
+interface Wine {
+  id: string;
+  name: string;
+  grapeType: string;
+  region: string;
+  quality: number; // 0-100
+  age: number; // days
+  value: number;
+  productionDate: number;
+}
+
+interface GameGoal {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  current: number;
+  completed: boolean;
+  reward: number;
+  type: 'money' | 'wine_production' | 'quality' | 'harvest';
 }
 
 interface WineRegion {
@@ -33,6 +57,14 @@ interface WineRegion {
 interface SimpleVineyardGameProps {
   onClose: () => void;
 }
+
+const GAME_GOALS = [
+  { id: 'first_harvest', title: '初回収穫', description: 'ブドウを1本収穫する', target: 1, current: 0, completed: false, reward: 200, type: 'harvest' as const },
+  { id: 'wine_maker', title: 'ワイン醸造家', description: 'ワインを3本作る', target: 3, current: 0, completed: false, reward: 500, type: 'wine_production' as const },
+  { id: 'money_goal_1', title: '資産家への第一歩', description: '2000円を貯める', target: 2000, current: 1000, completed: false, reward: 0, type: 'money' as const },
+  { id: 'quality_master', title: '品質マスター', description: '品質90以上のワインを作る', target: 90, current: 0, completed: false, reward: 800, type: 'quality' as const },
+  { id: 'money_goal_2', title: '成功した醸造家', description: '5000円を貯める', target: 5000, current: 1000, completed: false, reward: 0, type: 'money' as const }
+];
 
 const WINE_REGIONS: WineRegion[] = [
   {
@@ -160,11 +192,14 @@ const REGIONAL_WEATHER_TYPES = {
 };
 
 const SEASONS = [
-  { name: 'spring', emoji: '🌸', name_jp: '春', growthBonus: 1.3 },
-  { name: 'summer', emoji: '🌞', name_jp: '夏', growthBonus: 1.5 },
-  { name: 'autumn', emoji: '🍂', name_jp: '秋', growthBonus: 1.0 },
-  { name: 'winter', emoji: '❄️', name_jp: '冬', growthBonus: 0.3 }
+  { name: 'spring', emoji: '🌸', name_jp: '春', growthBonus: 1.3, plantingOptimal: true, harvestPossible: false },
+  { name: 'summer', emoji: '🌞', name_jp: '夏', growthBonus: 1.5, plantingOptimal: false, harvestPossible: false },
+  { name: 'autumn', emoji: '🍂', name_jp: '秋', growthBonus: 1.0, plantingOptimal: false, harvestPossible: true },
+  { name: 'winter', emoji: '❄️', name_jp: '冬', growthBonus: 0.3, plantingOptimal: false, harvestPossible: false }
 ];
+
+const DAYS_PER_SEASON = 30; // 1シーズン = 30日
+const GROWING_SEASONS_REQUIRED = 2; // 春に植えて秋に収穫（2シーズン必要）
 
 const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [plots, setPlots] = useState<Plot[]>(() =>
@@ -174,9 +209,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       grapeType: '',
       growth: 0,
       plantedDay: 0,
+      plantedSeason: 0,
       waterLevel: 50,
       fertilizer: 30,
-      health: 100
+      health: 100,
+      canHarvest: false
     }))
   );
 
@@ -216,7 +253,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     getRegionalWeather ? getRegionalWeather(WINE_REGIONS[0].id, 0) : REGIONAL_WEATHER_TYPES.oceanic[0]
   );
   const [currentSeason, setCurrentSeason] = useState(SEASONS[0]);
+  const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
   const [gamePhase, setGamePhase] = useState<'setup' | 'region_selection' | 'planting' | 'growing'>('setup');
+  const [wines, setWines] = useState<Wine[]>([]);
+  const [goals, setGoals] = useState<GameGoal[]>(GAME_GOALS);
+  const [totalHarvested, setTotalHarvested] = useState(0);
+  const [gameWon, setGameWon] = useState(false);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -231,6 +273,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
+    // 春以外は植え付けにペナルティ
+    if (!currentSeason.plantingOptimal) {
+      const confirm = window.confirm(`${currentSeason.name_jp}は植え付けの時期ではありません。成長が遅れる可能性があります。続けますか？`);
+      if (!confirm) return;
+    }
+
     setPlots(prev => prev.map(plot =>
       plot.id === plotId
         ? {
@@ -238,14 +286,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             isPlanted: true,
             grapeType: selectedGrapeType.id,
             plantedDay: day,
+            plantedSeason: currentSeasonIndex,
             waterLevel: 50,
             fertilizer: 30,
-            health: 100
+            health: 100,
+            canHarvest: false
           }
         : plot
     ));
     setMoney(prev => prev - selectedGrapeType.price);
-  }, [selectedGrapeType, money, day]);
+  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex]);
 
   const waterPlot = useCallback((plotId: number) => {
     if (water < 10) {
@@ -281,11 +331,27 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       setCurrentWeather(getRegionalWeather(selectedRegion.id, Math.floor((day / 7) % 4)));
     }
 
-    // 季節を変更（7日ごと）
+    // 季節を変更（30日ごと）
     setDay(prev => {
       const newDay = prev + 1;
-      const seasonIndex = Math.floor((newDay / 7) % 4);
-      setCurrentSeason(SEASONS[seasonIndex]);
+      const newSeasonIndex = Math.floor(newDay / DAYS_PER_SEASON) % 4;
+      if (newSeasonIndex !== currentSeasonIndex) {
+        setCurrentSeasonIndex(newSeasonIndex);
+        setCurrentSeason(SEASONS[newSeasonIndex]);
+
+        // 秋になったら成熟したブドウを収穫可能に
+        if (newSeasonIndex === 2) { // 秋
+          setPlots(prevPlots => prevPlots.map(plot => {
+            if (plot.isPlanted && plot.growth >= 100) {
+              const seasonsGrown = (newSeasonIndex - plot.plantedSeason + 4) % 4;
+              if (seasonsGrown >= GROWING_SEASONS_REQUIRED || plot.plantedSeason <= 0) {
+                return { ...plot, canHarvest: true };
+              }
+            }
+            return plot;
+          }));
+        }
+      }
       return newDay;
     });
 
@@ -333,20 +399,124 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     // リソースの自動補充（少量）
     setWater(prev => Math.min(100, prev + 2));
     setFertilizer(prev => Math.min(50, prev + 1));
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex]);
+
+  // ゴール進捗を更新する関数
+  const updateGoalProgress = useCallback((type: string, value: number) => {
+    setGoals(prev => prev.map(goal => {
+      if (goal.type === type && !goal.completed) {
+        const newCurrent = type === 'money' ? money :
+                         type === 'quality' ? Math.max(goal.current, value) :
+                         goal.current + value;
+
+        const completed = newCurrent >= goal.target;
+
+        if (completed && !goal.completed && goal.reward > 0) {
+          setMoney(prevMoney => prevMoney + goal.reward);
+          alert(`ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
+        }
+
+        return { ...goal, current: newCurrent, completed };
+      }
+      return goal;
+    }));
+  }, [money]);
 
   const harvestPlot = useCallback((plotId: number) => {
     const plot = plots.find(p => p.id === plotId);
     if (!plot || !plot.isPlanted || plot.growth < 100) return;
 
-    const harvestValue = Math.floor(plot.growth * 2);
-    setMoney(prev => prev + harvestValue);
+    if (!currentSeason.harvestPossible) {
+      alert(`${currentSeason.name_jp}は収穫の時期ではありません。秋までお待ちください。`);
+      return;
+    }
+
+    // ブドウからワインを作るか、そのまま売るか選択
+    const makeWine = window.confirm('ブドウからワインを作りますか？（いいえでそのまま売却）');
+
+    const grapeType = REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType);
+    if (!grapeType) return;
+
+    if (makeWine) {
+      // ワイン製造
+      const quality = Math.min(100,
+        plot.health * 0.4 +
+        plot.growth * 0.3 +
+        (plot.fertilizer > 70 ? 20 : plot.fertilizer * 0.2) +
+        grapeType.qualityBonus * 10
+      );
+
+      const wine: Wine = {
+        id: `wine_${Date.now()}_${plotId}`,
+        name: `${selectedRegion.name} ${grapeType.name}`,
+        grapeType: grapeType.name,
+        region: selectedRegion.name,
+        quality: Math.floor(quality),
+        age: 0,
+        value: Math.floor(grapeType.price * quality / 50),
+        productionDate: day
+      };
+
+      setWines(prev => [...prev, wine]);
+      alert(`「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
+
+      // ゴール達成チェック
+      updateGoalProgress('wine_production', 1);
+      updateGoalProgress('quality', wine.quality);
+    } else {
+      // そのまま売却
+      const harvestValue = Math.floor(grapeType.price * 0.8);
+      setMoney(prev => prev + harvestValue);
+      alert(`ブドウを${harvestValue}円で売却しました！`);
+    }
+
+    // 収穫数を更新
+    setTotalHarvested(prev => prev + 1);
+    updateGoalProgress('harvest', 1);
+
+    // プロットをリセット
     setPlots(prev => prev.map(p =>
       p.id === plotId
-        ? { ...p, isPlanted: false, grapeType: '', growth: 0, plantedDay: 0 }
+        ? {
+            ...p,
+            isPlanted: false,
+            grapeType: '',
+            growth: 0,
+            plantedDay: 0,
+            plantedSeason: 0,
+            canHarvest: false,
+            waterLevel: 50,
+            fertilizer: 30,
+            health: 100
+          }
         : p
     ));
-  }, [plots]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress]);
+
+  // ワインを売る関数
+  const sellWine = useCallback((wineId: string) => {
+    const wine = wines.find(w => w.id === wineId);
+    if (!wine) return;
+
+    const ageBonus = Math.floor(wine.age / 10) * 0.1; // 10日ごとに10%ボーナス
+    const finalValue = Math.floor(wine.value * (1 + ageBonus));
+
+    setMoney(prev => prev + finalValue);
+    setWines(prev => prev.filter(w => w.id !== wineId));
+
+    alert(`「${wine.name}」を${finalValue}円で売却しました！`);
+  }, [wines]);
+
+  // ゲーム勝利判定
+  const checkGameWin = useCallback(() => {
+    const allGoalsCompleted = goals.filter(g => g.type !== 'money').every(g => g.completed);
+    const moneyGoalsCompleted = goals.filter(g => g.type === 'money').some(g => g.completed);
+
+    if (allGoalsCompleted && moneyGoalsCompleted && !gameWon) {
+      setGameWon(true);
+      alert('おめでとうございます！すべてのゴールを達成しました！あなたは立派なワイン醸造家です！');
+    }
+  }, [goals, gameWon]);
 
   const startRegionSelection = () => {
     setGamePhase('region_selection');
@@ -355,6 +525,24 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const startPlanting = () => {
     setGamePhase('planting');
   };
+
+  // マネーゴールをチェック
+  React.useEffect(() => {
+    updateGoalProgress('money', money);
+  }, [money, updateGoalProgress]);
+
+  // ゲーム勝利をチェック
+  React.useEffect(() => {
+    checkGameWin();
+  }, [checkGameWin]);
+
+  // ワインの熟成（毎日）
+  React.useEffect(() => {
+    setWines(prev => prev.map(wine => ({
+      ...wine,
+      age: day - wine.productionDate
+    })));
+  }, [day]);
 
   const getPlotDisplay = (plot: Plot) => {
     if (!plot.isPlanted) return '⬜';
@@ -386,6 +574,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <span>{currentSeason.emoji} {currentSeason.name_jp}</span>
             <span>{currentWeather.emoji} {currentWeather.name}</span>
             <span>🌍 {selectedRegion.climate}</span>
+            <span>🍷 ワイン: {wines.length}本</span>
+            <span>🍇 収穫: {totalHarvested}本</span>
           </div>
           <button onClick={onClose} className="close-btn">✕</button>
         </div>
@@ -461,6 +651,62 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
           {gamePhase === 'planting' && (
             <div className="planting-phase">
+              {/* ゲームゴール表示 */}
+              <div className="game-goals">
+                <h3>🏆 ゲームゴール</h3>
+                <div className="goals-grid">
+                  {goals.map(goal => (
+                    <div key={goal.id} className={`goal-item ${goal.completed ? 'completed' : ''}`}>
+                      <div className="goal-title">{goal.title}</div>
+                      <div className="goal-description">{goal.description}</div>
+                      <div className="goal-progress">
+                        <span>{goal.current}</span> / <span>{goal.target}</span>
+                        {goal.type === 'money' && ' 円'}
+                        {goal.type === 'wine_production' && ' 本'}
+                        {goal.type === 'harvest' && ' 本'}
+                        {goal.type === 'quality' && ' ポイント'}
+                      </div>
+                      {goal.completed && <span className="goal-check">✓</span>}
+                      {goal.reward > 0 && !goal.completed && <div className="goal-reward">報酬: {goal.reward}円</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ワインセラー */}
+              {wines.length > 0 && (
+                <div className="wine-cellar">
+                  <h3>🍷 ワインセラー</h3>
+                  <div className="wines-grid">
+                    {wines.map(wine => (
+                      <div key={wine.id} className="wine-item">
+                        <div className="wine-header">
+                          <h4>{wine.name}</h4>
+                          <span className="wine-age">{wine.age}日熟成</span>
+                        </div>
+                        <div className="wine-details">
+                          <span className="wine-quality">品質: ★{wine.quality}</span>
+                          <span className="wine-value">価値: {Math.floor(wine.value * (1 + Math.floor(wine.age / 10) * 0.1))}円</span>
+                        </div>
+                        <button
+                          onClick={() => sellWine(wine.id)}
+                          className="sell-wine-btn"
+                        >
+                          売却
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {gameWon && (
+                <div className="game-won">
+                  <h2>🏆 ゲームクリア！</h2>
+                  <p>おめでとうございます！あなたは立派なワイン醸造家です！</p>
+                </div>
+              )}
+
               <h3>🌱 ブドウを植えよう</h3>
 
               {/* 地域情報表示 */}
@@ -560,7 +806,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </button>
                 <div className="game-stats">
                   <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/12</p>
-                  <p>収穫可能: {plots.filter(p => p.growth >= 100).length}</p>
+                  <p>収穫可能: {plots.filter(p => p.growth >= 100 && p.canHarvest).length}</p>
+                  <p className="season-info">
+                    {currentSeason.plantingOptimal && '🌱 植え付け時期'}
+                    {currentSeason.harvestPossible && '🍇 収穫時期'}
+                    {!currentSeason.plantingOptimal && !currentSeason.harvestPossible && '🕰️ 管理時期'}
+                  </p>
                 </div>
               </div>
             </div>
