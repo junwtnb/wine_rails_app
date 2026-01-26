@@ -4857,3 +4857,65 @@
   background: linear-gradient(45deg, #32CD32, #90EE90);
   border-color: #228B22;
 }
+
+/* 固定リソース表示 */
+.resource-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 1rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.resource-overlay h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #D2691E;
+  text-align: center;
+  font-weight: bold;
+}
+
+.resource-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.3rem 0;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.resource-item:last-child {
+  border-bottom: none;
+}
+
+.resource-item .emoji {
+  font-size: 1.1rem;
+  margin-right: 0.5rem;
+}
+
+.resource-item .value {
+  font-weight: bold;
+  color: #2E8B57;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .resource-overlay {
+    top: 10px;
+    right: 10px;
+    padding: 0.8rem;
+    min-width: 180px;
+    font-size: 0.9rem;
+  }
+
+  .resource-item .emoji {
+    font-size: 1rem;
+  }
+}

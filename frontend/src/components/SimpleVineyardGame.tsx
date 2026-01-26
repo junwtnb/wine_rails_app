@@ -91,7 +91,7 @@ const DISEASES: Disease[] = [
     emoji: '🦠',
     description: '葉に白い粉状の症状が現れる病気',
     healthDamage: 3,
-    spreadChance: 0.15,
+    spreadChance: 0.05, // 15%→5%に減少
     treatmentCost: 150,
     cureDays: 3
   },
@@ -101,7 +101,7 @@ const DISEASES: Disease[] = [
     emoji: '🖤',
     description: '実が黒く腐る深刻な病気',
     healthDamage: 5,
-    spreadChance: 0.1,
+    spreadChance: 0.03, // 10%→3%に減少
     treatmentCost: 200,
     cureDays: 5
   },
@@ -111,7 +111,7 @@ const DISEASES: Disease[] = [
     emoji: '🐛',
     description: '根を食べる害虫、最悪の場合全滅',
     healthDamage: 8,
-    spreadChance: 0.08,
+    spreadChance: 0.02, // 8%→2%に減少
     treatmentCost: 300,
     cureDays: 7
   }
@@ -124,7 +124,7 @@ const DISASTERS: Disaster[] = [
     emoji: '❄️',
     description: '春の遅霜で新芽が凍結',
     damage: '成長が50%減少',
-    probability: 0.02,
+    probability: 0.005, // 0.5%に減少
     affectedPlots: 6,
     damageCost: 200
   },
@@ -134,7 +134,7 @@ const DISASTERS: Disaster[] = [
     emoji: '🌨️',
     description: '雹で葉や実が傷つく',
     damage: '健康度が30減少',
-    probability: 0.015,
+    probability: 0.003, // 0.3%に減少
     affectedPlots: 4,
     damageCost: 150
   },
@@ -144,7 +144,7 @@ const DISASTERS: Disaster[] = [
     emoji: '☀️',
     description: '極度の乾燥で水不足',
     damage: '水分レベルが半減',
-    probability: 0.01,
+    probability: 0.002, // 0.2%に減少
     affectedPlots: 8,
     damageCost: 300
   }
@@ -499,7 +499,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         }
       } else {
         // 新しい病気の発生（健康度が低いほど確率上昇）
-        const diseaseChance = (100 - plot.health) / 1000; // 健康度50なら5%
+        const diseaseChance = (100 - plot.health) / 2000; // 健康度50なら2.5%に減少
         if (Math.random() < diseaseChance) {
           const randomDisease = DISEASES[Math.floor(Math.random() * DISEASES.length)];
           return {
@@ -859,6 +859,35 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
   return (
     <div className="vineyard-simulator-overlay">
+      {/* 固定リソース表示 */}
+      <div className="resource-overlay">
+        <h4>💼 リソース</h4>
+        <div className="resource-item">
+          <span><span className="emoji">💰</span>所持金</span>
+          <span className="value">{money}円</span>
+        </div>
+        <div className="resource-item">
+          <span><span className="emoji">💧</span>水</span>
+          <span className="value">{water}</span>
+        </div>
+        <div className="resource-item">
+          <span><span className="emoji">🌱</span>肥料</span>
+          <span className="value">{fertilizer}</span>
+        </div>
+        <div className="resource-item">
+          <span><span className="emoji">📅</span>経過日数</span>
+          <span className="value">{day}日</span>
+        </div>
+        <div className="resource-item">
+          <span><span className="emoji">{currentSeason.emoji}</span>{currentSeason.name_jp}</span>
+          <span className="value">{currentWeather.emoji}</span>
+        </div>
+        <div className="resource-item">
+          <span><span className="emoji">🍷</span>ワイン</span>
+          <span className="value">{wines.length}本</span>
+        </div>
+      </div>
+
       <div className="vineyard-simulator">
         <div className="game-header">
           <h2>{selectedRegion.emoji} {selectedRegion.name}のブドウ畑ゲーム</h2>
