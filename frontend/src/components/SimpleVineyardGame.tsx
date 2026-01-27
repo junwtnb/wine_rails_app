@@ -40,6 +40,13 @@ interface Disaster {
   damageCost: number; // 復旧費用
 }
 
+interface AnnualPayment {
+  name: string;
+  amount: number;
+  description: string;
+  emoji: string;
+}
+
 interface Wine {
   id: string;
   name: string;
@@ -148,6 +155,13 @@ const DISASTERS: Disaster[] = [
     affectedPlots: 8,
     damageCost: 300
   }
+];
+
+const ANNUAL_PAYMENTS: AnnualPayment[] = [
+  { name: '土地賃貸料', amount: 800, description: 'ブドウ畑の年間賃貸料', emoji: '🏠' },
+  { name: '設備維持費', amount: 300, description: '醸造設備の維持管理費', emoji: '🔧' },
+  { name: '保険料', amount: 200, description: '災害保険の年間保険料', emoji: '🛡️' },
+  { name: '税金', amount: 400, description: '事業税・固定資産税', emoji: '📋' }
 ];
 
 const GAME_GOALS = [
@@ -292,6 +306,7 @@ const SEASONS = [
 
 const DAYS_PER_SEASON = 30; // 1シーズン = 30日
 const GROWING_SEASONS_REQUIRED = 2; // 春に植えて秋に収穫（2シーズン必要）
+const DAYS_PER_YEAR = 120; // 4シーズン x 30日
 
 const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [plots, setPlots] = useState<Plot[]>(() =>
@@ -357,6 +372,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [gameWon, setGameWon] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState('');
+  const [lastPaymentDay, setLastPaymentDay] = useState(0);
+  const [yearsPassed, setYearsPassed] = useState(0);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -440,6 +457,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       if (newSeasonIndex !== currentSeasonIndex) {
         setCurrentSeasonIndex(newSeasonIndex);
         setCurrentSeason(SEASONS[newSeasonIndex]);
+
+        // 春の始まり（新年）に年次支払いチェック
+        if (newSeasonIndex === 0 && newDay > DAYS_PER_YEAR && newDay > lastPaymentDay + DAYS_PER_YEAR - 10) {
+          setLastPaymentDay(newDay);
+          setYearsPassed(Math.floor(newDay / DAYS_PER_YEAR));
+          checkAnnualPayments(newDay);
+        }
 
         // 秋になったら成熟したブドウを収穫可能に
         if (newSeasonIndex === 2) { // 秋
@@ -755,6 +779,26 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     }
   }, [money, gameOver, gameWon]);
 
+  // 年次支払いチェック
+  const checkAnnualPayments = useCallback((currentDay: number) => {
+    if (gameOver || gameWon) return;
+
+    const totalPayment = ANNUAL_PAYMENTS.reduce((sum, payment) => sum + payment.amount, 0);
+    const currentYear = Math.floor(currentDay / DAYS_PER_YEAR);
+
+    if (money >= totalPayment) {
+      // 支払い可能な場合
+      setMoney(prev => prev - totalPayment);
+
+      const paymentDetails = ANNUAL_PAYMENTS.map(p => `${p.emoji} ${p.name}: ${p.amount}円`).join('\n');
+      alert(`📅 第${currentYear}年度の年次支払いが完了しました！\n\n${paymentDetails}\n\n合計: ${totalPayment}円を支払いました。`);
+    } else {
+      // 支払い不能な場合 - ゲームオーバー
+      setGameOver(true);
+      setGameOverReason(`第${currentYear}年度の年次支払い（${totalPayment}円）ができませんでした。\n所持金不足により経営破綻です...`);
+    }
+  }, [money, gameOver, gameWon]);
+
   // ゲーム勝利判定
   const checkGameWin = useCallback(() => {
     if (gameOver) return;
@@ -878,6 +922,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           <span><span className="emoji">📅</span>経過日数</span>
           <span className="value">{day}日</span>
         </div>
+        <div className="resource-item">
+          <span><span className="emoji">🏛️</span>事業年度</span>
+          <span className="value">{Math.floor(day / DAYS_PER_YEAR) + 1}年目</span>
+        </div>
+        {day >= DAYS_PER_YEAR && (
+          <div className="resource-item">
+            <span><span className="emoji">💳</span>次回支払い</span>
+            <span className="value">{DAYS_PER_YEAR - (day % DAYS_PER_YEAR)}日後</span>
+          </div>
+        )}
         <div className="resource-item">
           <span><span className="emoji">{currentSeason.emoji}</span>{currentSeason.name_jp}</span>
           <span className="value">{currentWeather.emoji}</span>
