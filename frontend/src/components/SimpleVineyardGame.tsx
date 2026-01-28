@@ -383,6 +383,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   }, [day, getRegionalWeather]);
 
   const plantGrape = useCallback((plotId: number) => {
+    if (gameOver || gameWon) return;
+
     if (money < selectedGrapeType.price) {
       alert('お金が足りません！');
       return;
@@ -414,9 +416,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setMoney(prev => prev - selectedGrapeType.price);
-  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex]);
+  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex, gameOver, gameWon]);
 
   const waterPlot = useCallback((plotId: number) => {
+    if (gameOver || gameWon) return;
+
     if (water < 10) {
       alert('水が足りません！');
       return;
@@ -428,9 +432,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setWater(prev => prev - 10);
-  }, [water]);
+  }, [water, gameOver, gameWon]);
 
   const fertilizePlot = useCallback((plotId: number) => {
+    if (gameOver || gameWon) return;
+
     if (fertilizer < 5) {
       alert('肥料が足りません！');
       return;
@@ -442,9 +448,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setFertilizer(prev => prev - 5);
-  }, [fertilizer]);
+  }, [fertilizer, gameOver, gameWon]);
 
   const advanceDay = useCallback(() => {
+    // ゲームオーバーまたは勝利時は処理を停止
+    if (gameOver || gameWon) return;
+
     // 地域の気候に基づいた天気変更（30%の確率）
     if (Math.random() < 0.3) {
       setCurrentWeather(getRegionalWeather(selectedRegion.id, Math.floor((day / 7) % 4)));
@@ -562,7 +571,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     // ゲームオーバーチェック
     checkGameOver();
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon]);
 
   // ゴール進捗を更新する関数
   const updateGoalProgress = useCallback((type: string, value: number) => {
@@ -586,6 +595,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   }, [money]);
 
   const harvestPlot = useCallback((plotId: number) => {
+    if (gameOver || gameWon) return;
+
     const plot = plots.find(p => p.id === plotId);
     if (!plot || !plot.isPlanted || plot.growth < 100) return;
 
@@ -658,10 +669,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }
         : p
     ));
-  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon]);
 
   // ワインを売る関数
   const sellWine = useCallback((wineId: string) => {
+    if (gameOver || gameWon) return;
+
     const wine = wines.find(w => w.id === wineId);
     if (!wine) return;
 
@@ -672,7 +685,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setWines(prev => prev.filter(w => w.id !== wineId));
 
     alert(`「${wine.name}」を${finalValue}円で売却しました！`);
-  }, [wines]);
+  }, [wines, gameOver, gameWon]);
 
   // 災害チェック
   const checkRandomDisasters = useCallback(() => {
