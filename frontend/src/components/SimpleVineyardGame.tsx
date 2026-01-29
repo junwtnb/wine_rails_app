@@ -573,6 +573,9 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     checkGameOver();
   }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon]);
 
+  // 最近完了したゴールのトラッキング（重複通知を防ぐ）
+  const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
+
   // ゴール進捗を更新する関数
   const updateGoalProgress = useCallback((type: string, value: number) => {
     setGoals(prev => prev.map(goal => {
@@ -583,16 +586,28 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
         const completed = newCurrent >= goal.target;
 
-        if (completed && !goal.completed && goal.reward > 0) {
+        if (completed && !goal.completed && goal.reward > 0 && !recentlyCompletedGoals.has(goal.title)) {
           setMoney(prevMoney => prevMoney + goal.reward);
           alert(`ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
+
+          // 重複通知を防ぐためにゴールをトラッキング
+          setRecentlyCompletedGoals(prevSet => new Set(prevSet).add(goal.title));
+
+          // 5秒後にトラッキングをクリア
+          setTimeout(() => {
+            setRecentlyCompletedGoals(prevSet => {
+              const newSet = new Set(prevSet);
+              newSet.delete(goal.title);
+              return newSet;
+            });
+          }, 5000);
         }
 
         return { ...goal, current: newCurrent, completed };
       }
       return goal;
     }));
-  }, [money]);
+  }, [money, recentlyCompletedGoals]);
 
   const harvestPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
