@@ -831,10 +831,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const checkGameWin = useCallback(() => {
     if (gameOver) return;
 
-    const allGoalsCompleted = goals.filter(g => g.type !== 'money').every(g => g.completed);
-    const moneyGoalsCompleted = goals.filter(g => g.type === 'money').some(g => g.completed);
+    // すべてのゴール（お金のゴールも含む）が完了しているかチェック
+    const allGoalsCompleted = goals.every(g => g.completed);
 
-    if (allGoalsCompleted && moneyGoalsCompleted && !gameWon) {
+    if (allGoalsCompleted && !gameWon) {
       setGameWon(true);
       alert('おめでとうございます！すべてのゴールを達成しました！あなたは立派なワイン醸造家です！');
     }
