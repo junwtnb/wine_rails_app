@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 // ワイン産地別ブドウ畑ゲームコンポーネント
 interface Plot {
@@ -374,6 +374,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [gameOverReason, setGameOverReason] = useState('');
   const [lastPaymentDay, setLastPaymentDay] = useState(0);
   const [yearsPassed, setYearsPassed] = useState(0);
+  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
+  const [autoAdvanceSpeed, setAutoAdvanceSpeed] = useState(1000); // ミリ秒
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -573,6 +575,27 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     checkGameOver();
   }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon]);
 
+  // 自動進行の開始/停止
+  const toggleAutoAdvance = useCallback(() => {
+    setIsAutoAdvancing(prev => !prev);
+  }, []);
+
+  // 自動進行のuseEffect
+  useEffect(() => {
+    if (!isAutoAdvancing || gameOver || gameWon) {
+      if (isAutoAdvancing && (gameOver || gameWon)) {
+        setIsAutoAdvancing(false);
+      }
+      return;
+    }
+
+    const interval = setInterval(() => {
+      advanceDay();
+    }, autoAdvanceSpeed);
+
+    return () => clearInterval(interval);
+  }, [isAutoAdvancing, autoAdvanceSpeed, gameOver, gameWon, advanceDay]);
+
   // 最近完了したゴールのトラッキング（重複通知を防ぐ）
   const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
 
@@ -701,6 +724,48 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     alert(`「${wine.name}」を${finalValue}円で売却しました！`);
   }, [wines, gameOver, gameWon]);
+
+  // 一括水やり
+  const waterAllPlots = useCallback(() => {
+    if (gameOver || gameWon) return;
+
+    const plantedPlots = plots.filter(plot => plot.isPlanted);
+    const waterNeeded = plantedPlots.length * 10;
+
+    if (water < waterNeeded) {
+      alert(`水が足りません！必要な水: ${waterNeeded}、現在の水: ${water}`);
+      return;
+    }
+
+    setPlots(prev => prev.map(plot =>
+      plot.isPlanted
+        ? { ...plot, waterLevel: Math.min(100, plot.waterLevel + 30) }
+        : plot
+    ));
+    setWater(prev => prev - waterNeeded);
+    alert(`${plantedPlots.length}つの畑に水やりを行いました！`);
+  }, [plots, water, gameOver, gameWon]);
+
+  // 一括施肥
+  const fertilizeAllPlots = useCallback(() => {
+    if (gameOver || gameWon) return;
+
+    const plantedPlots = plots.filter(plot => plot.isPlanted);
+    const fertilizerNeeded = plantedPlots.length * 5;
+
+    if (fertilizer < fertilizerNeeded) {
+      alert(`肥料が足りません！必要な肥料: ${fertilizerNeeded}、現在の肥料: ${fertilizer}`);
+      return;
+    }
+
+    setPlots(prev => prev.map(plot =>
+      plot.isPlanted
+        ? { ...plot, fertilizer: Math.min(100, plot.fertilizer + 25) }
+        : plot
+    ));
+    setFertilizer(prev => prev - fertilizerNeeded);
+    alert(`${plantedPlots.length}つの畑に施肥を行いました！`);
+  }, [plots, fertilizer, gameOver, gameWon]);
 
   // 災害チェック
   const checkRandomDisasters = useCallback(() => {
@@ -1240,6 +1305,28 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 <button onClick={advanceDay} className="game-action-btn">
                   ⏰ 1日進める
                 </button>
+                <button
+                  onClick={toggleAutoAdvance}
+                  className={`game-action-btn ${isAutoAdvancing ? 'active' : ''}`}
+                >
+                  {isAutoAdvancing ? '⏹️ 自動停止' : '▶️ 自動進行'}
+                </button>
+                {isAutoAdvancing && (
+                  <div className="auto-speed-controls">
+                    <label>速度: </label>
+                    <button onClick={() => setAutoAdvanceSpeed(2000)}>遅い</button>
+                    <button onClick={() => setAutoAdvanceSpeed(1000)}>普通</button>
+                    <button onClick={() => setAutoAdvanceSpeed(500)}>早い</button>
+                  </div>
+                )}
+                <div className="batch-actions">
+                  <button onClick={waterAllPlots} className="game-action-btn batch-btn">
+                    💧 一括水やり
+                  </button>
+                  <button onClick={fertilizeAllPlots} className="game-action-btn batch-btn">
+                    🌱 一括施肥
+                  </button>
+                </div>
                 <div className="game-stats">
                   <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/12</p>
                   <p>収穫可能: {plots.filter(p => p.growth >= 100 && p.canHarvest).length}</p>
