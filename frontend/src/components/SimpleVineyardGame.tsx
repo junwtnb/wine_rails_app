@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 // ワイン産地別ブドウ畑ゲームコンポーネント
 interface Plot {
@@ -376,6 +376,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [yearsPassed, setYearsPassed] = useState(0);
   const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
   const [autoAdvanceSpeed, setAutoAdvanceSpeed] = useState(1000); // ミリ秒
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -383,6 +385,106 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setSelectedGrapeType(REGIONAL_GRAPE_TYPES[region.id as keyof RegionalGrapeTypes][0]);
     setCurrentWeather(getRegionalWeather(region.id, Math.floor((day / 7) % 4)));
   }, [day, getRegionalWeather]);
+
+  // 音楽・効果音システム
+  const audioContext = useRef<AudioContext | null>(null);
+  const backgroundMusic = useRef<OscillatorNode | null>(null);
+  const musicGainNode = useRef<GainNode | null>(null);
+
+  const initializeAudio = useCallback(() => {
+    if (!audioContext.current) {
+      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+  }, []);
+
+  const playSound = useCallback((frequency: number, duration: number, volume: number = 0.1) => {
+    if (!soundEnabled || !audioContext.current) return;
+
+    const oscillator = audioContext.current.createOscillator();
+    const gainNode = audioContext.current.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.current.destination);
+
+    oscillator.frequency.setValueAtTime(frequency, audioContext.current.currentTime);
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(0, audioContext.current.currentTime);
+    gainNode.gain.linearRampToValueAtTime(volume, audioContext.current.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + duration);
+
+    oscillator.start(audioContext.current.currentTime);
+    oscillator.stop(audioContext.current.currentTime + duration);
+  }, [soundEnabled]);
+
+  const playMelody = useCallback((notes: number[], noteDuration: number) => {
+    if (!soundEnabled) return;
+
+    notes.forEach((note, index) => {
+      setTimeout(() => {
+        playSound(note, noteDuration, 0.05);
+      }, index * noteDuration * 1000);
+    });
+  }, [playSound, soundEnabled]);
+
+  const startBackgroundMusic = useCallback(() => {
+    if (!musicEnabled || backgroundMusic.current || !audioContext.current) return;
+
+    initializeAudio();
+
+    const oscillator = audioContext.current.createOscillator();
+    const gainNode = audioContext.current.createGain();
+
+    musicGainNode.current = gainNode;
+    backgroundMusic.current = oscillator;
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.current.destination);
+
+    // 牧歌的なメロディー
+    oscillator.frequency.setValueAtTime(523.25, audioContext.current.currentTime); // C5
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.02, audioContext.current.currentTime);
+
+    // 簡単な変調で自然な感じに
+    const lfo = audioContext.current.createOscillator();
+    const lfoGain = audioContext.current.createGain();
+    lfo.frequency.setValueAtTime(0.5, audioContext.current.currentTime);
+    lfoGain.gain.setValueAtTime(10, audioContext.current.currentTime);
+    lfo.connect(lfoGain);
+    lfoGain.connect(oscillator.frequency);
+
+    oscillator.start();
+    lfo.start();
+  }, [musicEnabled, initializeAudio]);
+
+  const stopBackgroundMusic = useCallback(() => {
+    if (backgroundMusic.current) {
+      backgroundMusic.current.stop();
+      backgroundMusic.current = null;
+    }
+  }, []);
+
+  // 音楽の開始/停止
+  useEffect(() => {
+    if (musicEnabled && gamePhase === 'growing') {
+      startBackgroundMusic();
+    } else {
+      stopBackgroundMusic();
+    }
+
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [musicEnabled, gamePhase, startBackgroundMusic, stopBackgroundMusic]);
+
+  // 効果音定義
+  const playPlantSound = useCallback(() => playSound(440, 0.2), [playSound]);
+  const playWaterSound = useCallback(() => playMelody([523, 659, 784], 0.1), [playMelody]);
+  const playFertilizerSound = useCallback(() => playMelody([392, 440, 523], 0.15), [playMelody]);
+  const playHarvestSound = useCallback(() => playMelody([659, 784, 880, 1047], 0.12), [playMelody]);
+  const playSuccessSound = useCallback(() => playMelody([523, 659, 784, 1047, 1319], 0.1), [playMelody]);
+  const playErrorSound = useCallback(() => playMelody([220, 196, 175], 0.2), [playMelody]);
 
   const plantGrape = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -418,7 +520,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setMoney(prev => prev - selectedGrapeType.price);
-  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex, gameOver, gameWon]);
+    playPlantSound();
+  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex, gameOver, gameWon, playPlantSound]);
 
   const waterPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -434,7 +537,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setWater(prev => prev - 10);
-  }, [water, gameOver, gameWon]);
+    playWaterSound();
+  }, [water, gameOver, gameWon, playWaterSound]);
 
   const fertilizePlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -450,7 +554,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setFertilizer(prev => prev - 5);
-  }, [fertilizer, gameOver, gameWon]);
+    playFertilizerSound();
+  }, [fertilizer, gameOver, gameWon, playFertilizerSound]);
 
   const advanceDay = useCallback(() => {
     // ゲームオーバーまたは勝利時は処理を停止
@@ -611,6 +716,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
         if (completed && !goal.completed && goal.reward > 0 && !recentlyCompletedGoals.has(goal.title)) {
           setMoney(prevMoney => prevMoney + goal.reward);
+          playSuccessSound();
           alert(`ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
 
           // 重複通知を防ぐためにゴールをトラッキング
@@ -630,7 +736,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       }
       return goal;
     }));
-  }, [money, recentlyCompletedGoals]);
+  }, [money, recentlyCompletedGoals, playSuccessSound]);
 
   const harvestPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -670,6 +776,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       };
 
       setWines(prev => [...prev, wine]);
+      playHarvestSound();
       alert(`「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
 
       // ゴール達成チェック
@@ -707,7 +814,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }
         : p
     ));
-  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound]);
 
   // ワインを売る関数
   const sellWine = useCallback((wineId: string) => {
@@ -901,9 +1008,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     if (allGoalsCompleted && !gameWon) {
       setGameWon(true);
+      playSuccessSound();
       alert('おめでとうございます！すべてのゴールを達成しました！あなたは立派なワイン醸造家です！');
     }
-  }, [goals, gameWon, gameOver]);
+  }, [goals, gameWon, gameOver, playSuccessSound]);
 
   const startRegionSelection = () => {
     setGamePhase('region_selection');
@@ -1325,6 +1433,23 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   </button>
                   <button onClick={fertilizeAllPlots} className="game-action-btn batch-btn">
                     🌱 一括施肥
+                  </button>
+                </div>
+                <div className="audio-controls">
+                  <button
+                    onClick={() => {
+                      initializeAudio();
+                      setMusicEnabled(!musicEnabled);
+                    }}
+                    className={`game-action-btn audio-btn ${musicEnabled ? 'active' : ''}`}
+                  >
+                    {musicEnabled ? '🔊 音楽OFF' : '🔈 音楽ON'}
+                  </button>
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={`game-action-btn audio-btn ${soundEnabled ? 'active' : ''}`}
+                  >
+                    {soundEnabled ? '🎵 効果音OFF' : '🔇 効果音ON'}
                   </button>
                 </div>
                 <div className="game-stats">
