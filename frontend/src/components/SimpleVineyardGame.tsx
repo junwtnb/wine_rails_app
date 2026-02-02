@@ -76,6 +76,8 @@ interface WineRegion {
   country: string;
   emoji: string;
   climate: string;
+  koppenCode: string; // ケッペンの気候区分コード
+  koppenName: string; // ケッペンの気候区分名
   description: string;
   grapeVarieties: string[];
   weatherPatterns: {
@@ -180,6 +182,8 @@ const WINE_REGIONS: WineRegion[] = [
     country: 'フランス',
     emoji: '🏰',
     climate: '海洋性気候',
+    koppenCode: 'Cfb',
+    koppenName: '西岸海洋性気候',
     description: '温暖で湿潤、年間を通じて穏やかな気候',
     grapeVarieties: ['カベルネ・ソーヴィニヨン', 'メルロー', 'カベルネ・フラン', 'ソーヴィニヨン・ブラン'],
     weatherPatterns: {
@@ -197,6 +201,8 @@ const WINE_REGIONS: WineRegion[] = [
     country: 'フランス',
     emoji: '🍷',
     climate: '大陸性気候',
+    koppenCode: 'Dfb',
+    koppenName: '冷帯湿潤気候',
     description: '寒暖の差が激しく、厳しい冬と暑い夏',
     grapeVarieties: ['ピノ・ノワール', 'シャルドネ'],
     weatherPatterns: {
@@ -214,6 +220,8 @@ const WINE_REGIONS: WineRegion[] = [
     country: 'フランス',
     emoji: '🥂',
     climate: '大陸性気候（北部）',
+    koppenCode: 'Cfb',
+    koppenName: '西岸海洋性気候',
     description: '冷涼で石灰質土壌、スパークリングワインの聖地',
     grapeVarieties: ['シャルドネ', 'ピノ・ノワール', 'ピノ・ムニエ'],
     weatherPatterns: {
@@ -231,6 +239,8 @@ const WINE_REGIONS: WineRegion[] = [
     country: 'アメリカ',
     emoji: '🏔️',
     climate: '地中海性気候',
+    koppenCode: 'Csb',
+    koppenName: '温暖夏季地中海性気候',
     description: '乾燥した夏と温暖な冬、理想的なワイン気候',
     grapeVarieties: ['カベルネ・ソーヴィニヨン', 'シャルドネ', 'メルロー', 'ソーヴィニヨン・ブラン'],
     weatherPatterns: {
@@ -378,6 +388,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [autoAdvanceSpeed, setAutoAdvanceSpeed] = useState(1000); // ミリ秒
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showClimateQuiz, setShowClimateQuiz] = useState(false);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -1188,6 +1199,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     </div>
                     <div className="region-info">
                       <p className="climate">🌡️ {region.climate}</p>
+                      <p className="koppen-classification">📊 ケッペン気候区分: <strong>{region.koppenCode}</strong> ({region.koppenName})</p>
                       <p className="description">{region.description}</p>
                     </div>
                     <div className="grape-varieties">
@@ -1302,6 +1314,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               {/* 地域情報表示 */}
               <div className="current-region-info">
                 <h4>{selectedRegion.emoji} {selectedRegion.name} ({selectedRegion.country})</h4>
+                <p>🌡️ {selectedRegion.climate} | 📊 ケッペン: <strong>{selectedRegion.koppenCode}</strong> ({selectedRegion.koppenName})</p>
                 <p>{selectedRegion.description}</p>
                 <button onClick={() => setGamePhase('region_selection')} className="change-region-btn">
                   産地を変更
@@ -1452,6 +1465,14 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     {soundEnabled ? '🎵 効果音OFF' : '🔇 効果音ON'}
                   </button>
                 </div>
+                <div className="learning-section">
+                  <button
+                    onClick={() => setShowClimateQuiz(true)}
+                    className="game-action-btn learning-btn"
+                  >
+                    📚 気候区分クイズ
+                  </button>
+                </div>
                 <div className="game-stats">
                   <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/12</p>
                   <p>収穫可能: {plots.filter(p => p.growth >= 100 && p.canHarvest).length}</p>
@@ -1465,6 +1486,62 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             </div>
           )}
         </div>
+
+        {/* 気候区分クイズモーダル */}
+        {showClimateQuiz && (
+          <div className="quiz-overlay">
+            <div className="quiz-container">
+              <div className="quiz-header">
+                <h2>📚 ケッペンの気候区分クイズ</h2>
+                <button onClick={() => setShowClimateQuiz(false)} className="close-btn">✕</button>
+              </div>
+              <div className="quiz-content">
+                <p>各ワイン産地のケッペンの気候区分を学習しましょう！</p>
+
+                <div className="climate-learning-cards">
+                  {WINE_REGIONS.map(region => (
+                    <div key={region.id} className="climate-card">
+                      <div className="card-header">
+                        <h4>{region.emoji} {region.name}</h4>
+                        <span className="country-tag">{region.country}</span>
+                      </div>
+                      <div className="climate-info">
+                        <div className="koppen-display">
+                          <span className="koppen-code">{region.koppenCode}</span>
+                          <span className="koppen-name">{region.koppenName}</span>
+                        </div>
+                        <p className="traditional-climate">従来の表記: {region.climate}</p>
+                        <p className="region-description">{region.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="koppen-explanation">
+                  <h3>ケッペンの気候区分について</h3>
+                  <div className="explanation-grid">
+                    <div className="explanation-item">
+                      <strong>Cfb - 西岸海洋性気候</strong>
+                      <p>温暖で降水量が年中豊富。海洋の影響で気温の年較差が小さい。</p>
+                    </div>
+                    <div className="explanation-item">
+                      <strong>Csa/Csb - 地中海性気候</strong>
+                      <p>夏は乾燥、冬は温暖で雨。ワイン栽培に理想的な気候。</p>
+                    </div>
+                    <div className="explanation-item">
+                      <strong>Dfb - 冷帯湿潤気候</strong>
+                      <p>寒暖の差が大きく、冬は寒冷。大陸性の特徴を持つ。</p>
+                    </div>
+                    <div className="explanation-item">
+                      <strong>BSk - 冷涼半乾燥気候</strong>
+                      <p>降水量が少なく乾燥。昼夜の気温差が大きい。</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
