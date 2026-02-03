@@ -402,30 +402,58 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const backgroundMusic = useRef<OscillatorNode | null>(null);
   const musicGainNode = useRef<GainNode | null>(null);
 
-  const initializeAudio = useCallback(() => {
+  const initializeAudio = useCallback(async () => {
     if (!audioContext.current) {
       audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
+
+    // AudioContextが中断されている場合は再開
+    if (audioContext.current.state === 'suspended') {
+      try {
+        await audioContext.current.resume();
+        console.log('AudioContext resumed');
+      } catch (error) {
+        console.error('Failed to resume AudioContext:', error);
+      }
+    }
+
+    console.log('AudioContext state:', audioContext.current.state);
   }, []);
 
-  const playSound = useCallback((frequency: number, duration: number, volume: number = 0.1) => {
+  const playSound = useCallback(async (frequency: number, duration: number, volume: number = 0.1) => {
     if (!soundEnabled || !audioContext.current) return;
 
-    const oscillator = audioContext.current.createOscillator();
-    const gainNode = audioContext.current.createGain();
+    // AudioContextの状態をチェック
+    if (audioContext.current.state === 'suspended') {
+      try {
+        await audioContext.current.resume();
+      } catch (error) {
+        console.error('Failed to resume AudioContext:', error);
+        return;
+      }
+    }
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.current.destination);
+    try {
+      const oscillator = audioContext.current.createOscillator();
+      const gainNode = audioContext.current.createGain();
 
-    oscillator.frequency.setValueAtTime(frequency, audioContext.current.currentTime);
-    oscillator.type = 'sine';
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.current.destination);
 
-    gainNode.gain.setValueAtTime(0, audioContext.current.currentTime);
-    gainNode.gain.linearRampToValueAtTime(volume, audioContext.current.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + duration);
+      oscillator.frequency.setValueAtTime(frequency, audioContext.current.currentTime);
+      oscillator.type = 'sine';
 
-    oscillator.start(audioContext.current.currentTime);
-    oscillator.stop(audioContext.current.currentTime + duration);
+      gainNode.gain.setValueAtTime(0, audioContext.current.currentTime);
+      gainNode.gain.linearRampToValueAtTime(volume, audioContext.current.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + duration);
+
+      oscillator.start(audioContext.current.currentTime);
+      oscillator.stop(audioContext.current.currentTime + duration);
+
+      console.log(`Playing sound: ${frequency}Hz for ${duration}s at volume ${volume}`);
+    } catch (error) {
+      console.error('Error playing sound:', error);
+    }
   }, [soundEnabled]);
 
   const playMelody = useCallback((notes: number[], noteDuration: number) => {
@@ -438,53 +466,258 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     });
   }, [playSound, soundEnabled]);
 
+  // メロディー再生用の変数
+  const musicInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentNoteIndex = useRef(0);
+  const ambientSounds = useRef<{ oscillator: OscillatorNode; gain: GainNode }[]>([]);
+  const birdTimers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  // 牧歌的なメロディー（田園風景をイメージ）
+  const pastoralMelody = [
+    // 第1フレーズ（C major - 明るく穏やか）
+    { freq: 523.25, duration: 0.8 }, // C5
+    { freq: 587.33, duration: 0.4 }, // D5
+    { freq: 659.25, duration: 0.8 }, // E5
+    { freq: 523.25, duration: 0.4 }, // C5
+    { freq: 698.46, duration: 1.2 }, // F5
+    { freq: 659.25, duration: 0.8 }, // E5
+    { freq: 587.33, duration: 1.6 }, // D5
+
+    // 第2フレーズ（少し高めに）
+    { freq: 659.25, duration: 0.8 }, // E5
+    { freq: 698.46, duration: 0.4 }, // F5
+    { freq: 783.99, duration: 0.8 }, // G5
+    { freq: 659.25, duration: 0.4 }, // E5
+    { freq: 830.61, duration: 1.2 }, // G#5
+    { freq: 783.99, duration: 0.8 }, // G5
+    { freq: 698.46, duration: 1.6 }, // F5
+
+    // 第3フレーズ（下行で落ち着く）
+    { freq: 783.99, duration: 0.4 }, // G5
+    { freq: 659.25, duration: 0.4 }, // E5
+    { freq: 523.25, duration: 0.8 }, // C5
+    { freq: 698.46, duration: 0.8 }, // F5
+    { freq: 659.25, duration: 0.8 }, // E5
+    { freq: 587.33, duration: 0.8 }, // D5
+    { freq: 523.25, duration: 2.4 }, // C5（長めに終了）
+
+    // 休符
+    { freq: 0, duration: 1.0 }
+  ];
+
+  const playNextNote = useCallback(async () => {
+    console.log('🎵 playNextNote called - musicEnabled:', musicEnabled, 'audioContext:', !!audioContext.current);
+
+    if (!musicEnabled || !audioContext.current) {
+      console.log('🎵 BGM stopped - musicEnabled:', musicEnabled, 'audioContext:', !!audioContext.current);
+      return;
+    }
+
+    // AudioContextの状態をチェック
+    if (audioContext.current.state === 'suspended') {
+      console.log('🎵 AudioContext suspended, attempting to resume...');
+      try {
+        await audioContext.current.resume();
+        console.log('🎵 AudioContext resumed successfully');
+      } catch (error) {
+        console.error('🎵 Failed to resume AudioContext:', error);
+        return;
+      }
+    }
+
+    const note = pastoralMelody[currentNoteIndex.current];
+    console.log(`🎵 Playing BGM note ${currentNoteIndex.current}: ${note.freq}Hz for ${note.duration}s`);
+
+    if (note.freq > 0) {
+      try {
+        // 音を鳴らす
+        const oscillator = audioContext.current.createOscillator();
+        const gainNode = audioContext.current.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.current.destination);
+
+        oscillator.frequency.setValueAtTime(note.freq, audioContext.current.currentTime);
+        oscillator.type = 'sine';
+
+        // なめらかなエンベロープ
+        gainNode.gain.setValueAtTime(0, audioContext.current.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.03, audioContext.current.currentTime + 0.05); // 音量を少し上げる
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + note.duration * 0.8);
+        gainNode.gain.linearRampToValueAtTime(0.001, audioContext.current.currentTime + note.duration);
+
+        oscillator.start(audioContext.current.currentTime);
+        oscillator.stop(audioContext.current.currentTime + note.duration);
+
+        console.log(`🎵 BGM note playing: ${note.freq}Hz for ${note.duration}s`);
+      } catch (error) {
+        console.error('🎵 Error playing BGM note:', error);
+      }
+    } else {
+      console.log('🎵 BGM rest note (silence)');
+    }
+
+    // 次の音符へ
+    currentNoteIndex.current = (currentNoteIndex.current + 1) % pastoralMelody.length;
+
+    // タイマーを設定して次の音符を再生（musicEnabledを再チェック）
+    if (musicInterval.current) {
+      clearTimeout(musicInterval.current);
+      musicInterval.current = null;
+    }
+
+    // 音楽が無効になっている場合はタイマーを設定しない
+    if (!musicEnabled) {
+      console.log('🎵 Music disabled during playback, not scheduling next note');
+      return;
+    }
+
+    musicInterval.current = setTimeout(() => {
+      playNextNote();
+    }, note.duration * 1000);
+
+    console.log(`🎵 Next BGM note scheduled in ${note.duration * 1000}ms`);
+
+  }, [musicEnabled, pastoralMelody]);
+
+  // アンビエント音（風や自然音）を開始
+  const startAmbientSounds = useCallback(() => {
+    if (!audioContext.current) return;
+
+    // 風の音（低周波ノイズ）
+    const windOsc = audioContext.current.createOscillator();
+    const windGain = audioContext.current.createGain();
+    const windLFO = audioContext.current.createOscillator();
+    const windLFOGain = audioContext.current.createGain();
+
+    windOsc.type = 'sawtooth';
+    windOsc.frequency.setValueAtTime(80, audioContext.current.currentTime);
+    windGain.gain.setValueAtTime(0.003, audioContext.current.currentTime);
+
+    // 風の音にゆらぎを追加
+    windLFO.type = 'sine';
+    windLFO.frequency.setValueAtTime(0.1, audioContext.current.currentTime);
+    windLFOGain.gain.setValueAtTime(20, audioContext.current.currentTime);
+    windLFO.connect(windLFOGain);
+    windLFOGain.connect(windOsc.frequency);
+
+    windOsc.connect(windGain);
+    windGain.connect(audioContext.current.destination);
+
+    windOsc.start();
+    windLFO.start();
+
+    ambientSounds.current.push({ oscillator: windOsc, gain: windGain });
+
+    // 鳥の鳴き声（時々）
+    const playBirdSound = () => {
+      if (!audioContext.current || !musicEnabled) {
+        console.log('🐦 Bird sound stopped - musicEnabled:', musicEnabled, 'audioContext:', !!audioContext.current);
+        return;
+      }
+
+      console.log('🐦 Playing bird sound');
+      const birdFreqs = [800, 1200, 900, 1100, 750];
+      const freq = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
+
+      const birdOsc = audioContext.current.createOscillator();
+      const birdGain = audioContext.current.createGain();
+
+      birdOsc.type = 'sine';
+      birdOsc.frequency.setValueAtTime(freq, audioContext.current.currentTime);
+      birdOsc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioContext.current.currentTime + 0.1);
+      birdOsc.frequency.exponentialRampToValueAtTime(freq * 0.8, audioContext.current.currentTime + 0.3);
+
+      birdGain.gain.setValueAtTime(0, audioContext.current.currentTime);
+      birdGain.gain.linearRampToValueAtTime(0.005, audioContext.current.currentTime + 0.02);
+      birdGain.gain.exponentialRampToValueAtTime(0.001, audioContext.current.currentTime + 0.3);
+
+      birdOsc.connect(birdGain);
+      birdGain.connect(audioContext.current.destination);
+
+      birdOsc.start();
+      birdOsc.stop(audioContext.current.currentTime + 0.3);
+
+      // ランダムに次の鳥の鳴き声をスケジュール（タイマーを追跡）
+      const nextBirdTimer = setTimeout(playBirdSound, Math.random() * 8000 + 5000); // 5-13秒後
+      birdTimers.current.push(nextBirdTimer);
+      console.log('🐦 Next bird sound scheduled, total timers:', birdTimers.current.length);
+    };
+
+    // 最初の鳥の鳴き声を3秒後に開始（タイマーを追跡）
+    const initialBirdTimer = setTimeout(playBirdSound, 3000);
+    birdTimers.current.push(initialBirdTimer);
+    console.log('🐦 Initial bird timer set');
+
+  }, [musicEnabled]);
+
   const startBackgroundMusic = useCallback(() => {
-    if (!musicEnabled || backgroundMusic.current || !audioContext.current) return;
+    console.log('🎵 startBackgroundMusic called - musicEnabled:', musicEnabled, 'musicInterval exists:', !!musicInterval.current, 'audioContext:', !!audioContext.current);
 
+    if (!musicEnabled || musicInterval.current || !audioContext.current) {
+      console.log('🎵 BGM start blocked - musicEnabled:', musicEnabled, 'musicInterval exists:', !!musicInterval.current, 'audioContext:', !!audioContext.current);
+      return;
+    }
+
+    console.log('🎵 Starting BGM...');
     initializeAudio();
-
-    const oscillator = audioContext.current.createOscillator();
-    const gainNode = audioContext.current.createGain();
-
-    musicGainNode.current = gainNode;
-    backgroundMusic.current = oscillator;
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.current.destination);
-
-    // 牧歌的なメロディー
-    oscillator.frequency.setValueAtTime(523.25, audioContext.current.currentTime); // C5
-    oscillator.type = 'sine';
-    gainNode.gain.setValueAtTime(0.02, audioContext.current.currentTime);
-
-    // 簡単な変調で自然な感じに
-    const lfo = audioContext.current.createOscillator();
-    const lfoGain = audioContext.current.createGain();
-    lfo.frequency.setValueAtTime(0.5, audioContext.current.currentTime);
-    lfoGain.gain.setValueAtTime(10, audioContext.current.currentTime);
-    lfo.connect(lfoGain);
-    lfoGain.connect(oscillator.frequency);
-
-    oscillator.start();
-    lfo.start();
-  }, [musicEnabled, initializeAudio]);
+    currentNoteIndex.current = 0;
+    playNextNote();
+    startAmbientSounds();
+    console.log('🎵 BGM started successfully');
+  }, [musicEnabled, initializeAudio, playNextNote, startAmbientSounds]);
 
   const stopBackgroundMusic = useCallback(() => {
+    console.log('🎵 stopBackgroundMusic called - clearing timers and stopping oscillators');
+
+    if (musicInterval.current) {
+      console.log('🎵 Clearing music interval timer');
+      clearTimeout(musicInterval.current);
+      musicInterval.current = null;
+    }
     if (backgroundMusic.current) {
+      console.log('🎵 Stopping background music oscillator');
       backgroundMusic.current.stop();
       backgroundMusic.current = null;
     }
+
+    // アンビエント音も停止
+    console.log('🎵 Stopping ambient sounds:', ambientSounds.current.length);
+    ambientSounds.current.forEach(({ oscillator }) => {
+      try {
+        oscillator.stop();
+      } catch (e) {
+        // 既に停止済みの場合はエラーを無視
+      }
+    });
+    ambientSounds.current = [];
+
+    // 鳥のタイマーもクリア
+    console.log('🐦 Clearing bird timers:', birdTimers.current.length);
+    birdTimers.current.forEach(timer => {
+      clearTimeout(timer);
+    });
+    birdTimers.current = [];
+
+    currentNoteIndex.current = 0;
+    console.log('🎵 BGM and all ambient sounds stopped completely');
   }, []);
 
   // 音楽の開始/停止
   useEffect(() => {
-    if (musicEnabled && gamePhase === 'growing') {
+    console.log('🎵 BGM useEffect triggered - musicEnabled:', musicEnabled, 'gamePhase:', gamePhase);
+    console.log('🎵 Current game state - gameOver:', gameOver, 'gameWon:', gameWon);
+
+    if (musicEnabled && (gamePhase === 'growing' || gamePhase === 'planting')) {
+      console.log('🎵 Conditions met for BGM, starting...');
       startBackgroundMusic();
     } else {
+      console.log('🎵 BGM conditions not met or stopping...');
       stopBackgroundMusic();
     }
 
     return () => {
+      console.log('🎵 BGM useEffect cleanup');
       stopBackgroundMusic();
     };
   }, [musicEnabled, gamePhase, startBackgroundMusic, stopBackgroundMusic]);
@@ -1450,9 +1683,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
                 <div className="audio-controls">
                   <button
-                    onClick={() => {
-                      initializeAudio();
-                      setMusicEnabled(!musicEnabled);
+                    onClick={async () => {
+                      const newMusicState = !musicEnabled;
+                      console.log('🎵 Music button clicked - changing from', musicEnabled, 'to', newMusicState);
+                      await initializeAudio();
+                      setMusicEnabled(newMusicState);
                     }}
                     className={`game-action-btn audio-btn ${musicEnabled ? 'active' : ''}`}
                   >
@@ -1471,6 +1706,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     className="game-action-btn learning-btn"
                   >
                     📚 気候区分クイズ
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await initializeAudio();
+                      await playSound(523.25, 0.5, 0.1); // テスト音（C5）
+                    }}
+                    className="game-action-btn test-btn"
+                  >
+                    🔊 音テスト
                   </button>
                 </div>
                 <div className="game-stats">
