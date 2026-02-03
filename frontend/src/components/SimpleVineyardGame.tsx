@@ -423,6 +423,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const playSound = useCallback(async (frequency: number, duration: number, volume: number = 0.1) => {
     if (!soundEnabled || !audioContext.current) return;
 
+    // 自動進行中は効果音を間引く（30%の確率で再生）
+    if (isAutoAdvancing && Math.random() > 0.3) {
+      return;
+    }
+
     // AudioContextの状態をチェック
     if (audioContext.current.state === 'suspended') {
       try {
@@ -443,18 +448,25 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       oscillator.frequency.setValueAtTime(frequency, audioContext.current.currentTime);
       oscillator.type = 'sine';
 
+      // 自動進行中は音量を大幅に下げる
+      const adjustedVolume = isAutoAdvancing ? volume * 0.1 : volume;
+
       gainNode.gain.setValueAtTime(0, audioContext.current.currentTime);
-      gainNode.gain.linearRampToValueAtTime(volume, audioContext.current.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(adjustedVolume, audioContext.current.currentTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + duration);
 
       oscillator.start(audioContext.current.currentTime);
       oscillator.stop(audioContext.current.currentTime + duration);
 
-      console.log(`Playing sound: ${frequency}Hz for ${duration}s at volume ${volume}`);
+      if (isAutoAdvancing) {
+        console.log(`🔇 Auto-advance quiet sound (30% chance): ${frequency}Hz (volume: ${adjustedVolume})`);
+      } else {
+        console.log(`Playing sound: ${frequency}Hz for ${duration}s at volume ${adjustedVolume}`);
+      }
     } catch (error) {
       console.error('Error playing sound:', error);
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, isAutoAdvancing]);
 
   const playMelody = useCallback((notes: number[], noteDuration: number) => {
     if (!soundEnabled) return;
