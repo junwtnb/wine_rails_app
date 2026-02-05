@@ -389,6 +389,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showClimateQuiz, setShowClimateQuiz] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // トースト通知を表示する関数
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
+  }, []);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -746,7 +753,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     if (gameOver || gameWon) return;
 
     if (money < selectedGrapeType.price) {
-      alert('お金が足りません！');
+      showToast('💰 お金が足りません！');
       return;
     }
 
@@ -777,13 +784,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     ));
     setMoney(prev => prev - selectedGrapeType.price);
     playPlantSound();
-  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex, gameOver, gameWon, playPlantSound]);
+  }, [selectedGrapeType, money, day, currentSeason, currentSeasonIndex, gameOver, gameWon, playPlantSound, showToast]);
 
   const waterPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
 
     if (water < 10) {
-      alert('水が足りません！');
+      showToast('💧 水が足りません！');
       return;
     }
 
@@ -794,13 +801,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     ));
     setWater(prev => prev - 10);
     playWaterSound();
-  }, [water, gameOver, gameWon, playWaterSound]);
+  }, [water, gameOver, gameWon, playWaterSound, showToast]);
 
   const fertilizePlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
 
     if (fertilizer < 5) {
-      alert('肥料が足りません！');
+      showToast('🌱 肥料が足りません！');
       return;
     }
 
@@ -811,7 +818,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     ));
     setFertilizer(prev => prev - 5);
     playFertilizerSound();
-  }, [fertilizer, gameOver, gameWon, playFertilizerSound]);
+  }, [fertilizer, gameOver, gameWon, playFertilizerSound, showToast]);
 
   const advanceDay = useCallback(() => {
     // ゲームオーバーまたは勝利時は処理を停止
@@ -1001,7 +1008,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     if (!plot || !plot.isPlanted || plot.growth < 100) return;
 
     if (!currentSeason.harvestPossible) {
-      alert(`${currentSeason.name_jp}は収穫の時期ではありません。秋までお待ちください。`);
+      showToast(`🍂 ${currentSeason.name_jp}は収穫の時期ではありません。秋までお待ちください。`);
       return;
     }
 
@@ -1033,7 +1040,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
       setWines(prev => [...prev, wine]);
       playHarvestSound();
-      alert(`「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
+      showToast(`🍷 「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
 
       // ゴール達成チェック
       updateGoalProgress('wine_production', 1);
@@ -1042,7 +1049,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       // そのまま売却
       const harvestValue = Math.floor(grapeType.price * 0.8);
       setMoney(prev => prev + harvestValue);
-      alert(`ブドウを${harvestValue}円で売却しました！`);
+      showToast(`🍇 ブドウを${harvestValue}円で売却しました！`);
     }
 
     // 収穫数を更新
@@ -1070,7 +1077,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }
         : p
     ));
-  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound, showToast]);
 
   // ワインを売る関数
   const sellWine = useCallback((wineId: string) => {
@@ -1085,8 +1092,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setMoney(prev => prev + finalValue);
     setWines(prev => prev.filter(w => w.id !== wineId));
 
-    alert(`「${wine.name}」を${finalValue}円で売却しました！`);
-  }, [wines, gameOver, gameWon]);
+    showToast(`🍷 「${wine.name}」を${finalValue}円で売却しました！`);
+  }, [wines, gameOver, gameWon, showToast]);
 
   // 一括水やり
   const waterAllPlots = useCallback(() => {
@@ -1096,7 +1103,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     const waterNeeded = plantedPlots.length * 10;
 
     if (water < waterNeeded) {
-      alert(`水が足りません！必要な水: ${waterNeeded}、現在の水: ${water}`);
+      showToast(`💧 水が足りません！必要: ${waterNeeded}、現在: ${water}`);
       return;
     }
 
@@ -1106,8 +1113,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setWater(prev => prev - waterNeeded);
-    alert(`${plantedPlots.length}つの畑に水やりを行いました！`);
-  }, [plots, water, gameOver, gameWon]);
+    showToast(`💧 ${plantedPlots.length}つの畑に水やりを行いました！`);
+  }, [plots, water, gameOver, gameWon, showToast]);
 
   // 一括施肥
   const fertilizeAllPlots = useCallback(() => {
@@ -1117,7 +1124,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     const fertilizerNeeded = plantedPlots.length * 5;
 
     if (fertilizer < fertilizerNeeded) {
-      alert(`肥料が足りません！必要な肥料: ${fertilizerNeeded}、現在の肥料: ${fertilizer}`);
+      showToast(`🌱 肥料が足りません！必要: ${fertilizerNeeded}、現在: ${fertilizer}`);
       return;
     }
 
@@ -1127,8 +1134,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : plot
     ));
     setFertilizer(prev => prev - fertilizerNeeded);
-    alert(`${plantedPlots.length}つの畑に施肥を行いました！`);
-  }, [plots, fertilizer, gameOver, gameWon]);
+    showToast(`🌱 ${plantedPlots.length}つの畑に施肥を行いました！`);
+  }, [plots, fertilizer, gameOver, gameWon, showToast]);
 
   // 災害チェック
   const checkRandomDisasters = useCallback(() => {
@@ -1286,7 +1293,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     if (!disease) return;
 
     if (money < disease.treatmentCost) {
-      alert(`治療費が足りません！必要な金額: ${disease.treatmentCost}円`);
+      showToast(`💊 治療費が足りません！必要: ${disease.treatmentCost}円`);
       return;
     }
 
@@ -1297,8 +1304,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         : p
     ));
 
-    alert(`${disease.emoji} ${disease.name}を治療しました！費用: ${disease.treatmentCost}円`);
-  }, [plots, money]);
+    showToast(`${disease.emoji} ${disease.name}を治療しました！費用: ${disease.treatmentCost}円`);
+  }, [plots, money, showToast]);
 
   // ゲームリスタート
   const restartGame = useCallback(() => {
@@ -1796,6 +1803,29 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* トースト通知（画面下部に固定表示） */}
+        {toastMessage && (
+          <div
+            className="toast-notification"
+            style={{
+              position: 'fixed',
+              bottom: '100px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#333',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              zIndex: 1000,
+              fontSize: '16px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              animation: 'fadeInOut 3s ease-in-out'
+            }}
+          >
+            <span>{toastMessage}</span>
           </div>
         )}
       </div>
