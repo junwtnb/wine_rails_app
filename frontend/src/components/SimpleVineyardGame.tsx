@@ -980,7 +980,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         if (completed && !goal.completed && goal.reward > 0 && !recentlyCompletedGoals.has(goal.title)) {
           setMoney(prevMoney => prevMoney + goal.reward);
           playSuccessSound();
-          alert(`ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
+          showToast(`🏆 ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
 
           // 重複通知を防ぐためにゴールをトラッキング
           setRecentlyCompletedGoals(prevSet => new Set(prevSet).add(goal.title));
@@ -999,7 +999,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       }
       return goal;
     }));
-  }, [money, recentlyCompletedGoals, playSuccessSound]);
+  }, [money, recentlyCompletedGoals, playSuccessSound, showToast]);
 
   const harvestPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
