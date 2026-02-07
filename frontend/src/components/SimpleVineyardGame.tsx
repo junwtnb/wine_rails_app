@@ -391,11 +391,43 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [showClimateQuiz, setShowClimateQuiz] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // 気候マスターレベルシステム
+  const [regionExperience, setRegionExperience] = useState<Record<string, number>>({});
+  const [climateMasteryLevel, setClimateMasteryLevel] = useState<Record<string, number>>({});
+
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
   }, []);
+
+  // 気候マスターレベル計算関数
+  const getClimateMasteryLevel = useCallback((experience: number) => {
+    if (experience >= 100) return 5; // マスター
+    if (experience >= 60) return 4;  // 上級
+    if (experience >= 30) return 3;  // 中級
+    if (experience >= 10) return 2;  // 初級
+    if (experience >= 1) return 1;   // 入門
+    return 0; // 未体験
+  }, []);
+
+  // 気候区分マスタリー判定
+  const getClimateMasteryInfo = useCallback((koppenCode: string) => {
+    const experience = regionExperience[koppenCode] || 0;
+    const level = getClimateMasteryLevel(experience);
+
+    const levelNames = ['未体験', '入門', '初級', '中級', '上級', 'マスター'];
+    const levelIcons = ['❓', '🌱', '🌿', '🌳', '🌲', '👑'];
+
+    return {
+      experience,
+      level,
+      levelName: levelNames[level],
+      levelIcon: levelIcons[level],
+      nextLevelExp: level < 5 ? [1, 10, 30, 60, 100][level] : 100,
+      isMaster: level === 5
+    };
+  }, [regionExperience, getClimateMasteryLevel]);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -824,6 +856,30 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     // ゲームオーバーまたは勝利時は処理を停止
     if (gameOver || gameWon) return;
 
+    // 気候マスター経験値を増加
+    const currentKoppenCode = selectedRegion.koppenCode;
+    if (currentKoppenCode) {
+      setRegionExperience(prev => {
+        const currentExp = prev[currentKoppenCode] || 0;
+        const newExp = currentExp + 1;
+
+        // レベルアップチェック
+        const oldLevel = getClimateMasteryLevel(currentExp);
+        const newLevel = getClimateMasteryLevel(newExp);
+
+        if (newLevel > oldLevel) {
+          const masteryInfo = getClimateMasteryInfo(currentKoppenCode);
+          showToast(`${masteryInfo.levelIcon} ${selectedRegion.name}の気候マスタリーが「${masteryInfo.levelName}」にレベルアップ！`);
+
+          if (newLevel === 5) {
+            showToast(`👑 ${currentKoppenCode}気候区分をマスターしました！特別なワインが解禁されます！`);
+          }
+        }
+
+        return { ...prev, [currentKoppenCode]: newExp };
+      });
+    }
+
     // 地域の気候に基づいた天気変更（30%の確率）
     if (Math.random() < 0.3) {
       setCurrentWeather(getRegionalWeather(selectedRegion.id, Math.floor((day / 7) % 4)));
@@ -941,7 +997,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     // ゲームオーバーチェック
     checkGameOver();
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -1744,6 +1800,22 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     {currentSeason.harvestPossible && '🍇 収穫時期'}
                     {!currentSeason.plantingOptimal && !currentSeason.harvestPossible && '🕰️ 管理時期'}
                   </p>
+
+                  {/* 気候マスターレベル表示 */}
+                  {(() => {
+                    const masteryInfo = getClimateMasteryInfo(selectedRegion.koppenCode || '');
+                    return (
+                      <div className="climate-mastery-info">
+                        <p>
+                          {masteryInfo.levelIcon} {selectedRegion.koppenCode}気候: {masteryInfo.levelName}
+                          <small> ({masteryInfo.experience}/{masteryInfo.nextLevelExp})</small>
+                        </p>
+                        {masteryInfo.isMaster && (
+                          <p style={{color: 'gold', fontSize: '0.9em'}}>👑 マスター特権でプレミアムワイン解禁中！</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
