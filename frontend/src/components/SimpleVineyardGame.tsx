@@ -56,6 +56,9 @@ interface Wine {
   age: number; // days
   value: number;
   productionDate: number;
+  isSpecial?: boolean; // 特別ワインかどうか
+  specialType?: string; // 特別ワインの種類
+  masteryBonus?: number; // マスタリーボーナス
 }
 
 interface GameGoal {
@@ -428,6 +431,55 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       isMaster: level === 5
     };
   }, [regionExperience, getClimateMasteryLevel]);
+
+  // 特別ワインを作成できるかチェック
+  const canCreateSpecialWine = useCallback((koppenCode: string) => {
+    const masteryInfo = getClimateMasteryInfo(koppenCode);
+    return masteryInfo.isMaster;
+  }, [getClimateMasteryInfo]);
+
+  // 特別ワイン情報を取得
+  const getSpecialWineInfo = useCallback((koppenCode: string) => {
+    const specialWines: Record<string, { name: string; type: string; qualityBonus: number; valueMultiplier: number; description: string }> = {
+      'Cfb': {
+        name: 'オーシャニック・リザーブ',
+        type: 'oceanic_reserve',
+        qualityBonus: 15,
+        valueMultiplier: 2.5,
+        description: '海洋性気候の穏やかな条件で熟成されたプレミアムワイン'
+      },
+      'Csa': {
+        name: 'メディテラネオ・グランド',
+        type: 'mediterraneo_grand',
+        qualityBonus: 20,
+        valueMultiplier: 3.0,
+        description: '地中海性気候の理想的な条件で作られた最高級ワイン'
+      },
+      'Csb': {
+        name: 'コースタル・エリート',
+        type: 'coastal_elite',
+        qualityBonus: 18,
+        valueMultiplier: 2.8,
+        description: '温帯地中海性気候の恵まれた環境で育まれた逸品'
+      },
+      'Dfb': {
+        name: 'コンチネンタル・マスターピース',
+        type: 'continental_masterpiece',
+        qualityBonus: 12,
+        valueMultiplier: 2.2,
+        description: '大陸性気候の厳しい条件を乗り越えた力強いワイン'
+      },
+      'BSk': {
+        name: 'ドライランド・トレジャー',
+        type: 'dryland_treasure',
+        qualityBonus: 25,
+        valueMultiplier: 4.0,
+        description: '半乾燥気候の極限環境で育った希少なプレミアムワイン'
+      }
+    };
+
+    return specialWines[koppenCode] || null;
+  }, []);
 
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
@@ -1068,35 +1120,83 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
-    // ブドウからワインを作るか、そのまま売るか選択
-    const makeWine = window.confirm('ブドウからワインを作りますか？（いいえでそのまま売却）');
-
     const grapeType = REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType);
     if (!grapeType) return;
 
-    if (makeWine) {
+    // 特別ワインを作成できるかチェック
+    const canCreateSpecial = canCreateSpecialWine(selectedRegion.koppenCode || '');
+    const specialWineInfo = getSpecialWineInfo(selectedRegion.koppenCode || '');
+
+    let wineChoice = 'sell';
+    if (canCreateSpecial && specialWineInfo) {
+      // マスター限定：特別ワインの選択肢を追加
+      const choices = [
+        `👑 ${specialWineInfo.name}を作る（マスター限定）`,
+        '🍷 通常ワインを作る',
+        '🍇 ブドウをそのまま売る'
+      ];
+
+      const choice = window.prompt(
+        `🏆 気候マスターの特権！選択してください:\n\n1. ${choices[0]}\n2. ${choices[1]}\n3. ${choices[2]}\n\n番号を入力 (1-3):`
+      );
+
+      if (choice === '1') wineChoice = 'special';
+      else if (choice === '2') wineChoice = 'normal';
+      else if (choice === '3') wineChoice = 'sell';
+      else return; // キャンセルまたは無効入力
+    } else {
+      // 通常の選択
+      const makeWine = window.confirm('ブドウからワインを作りますか？（いいえでそのまま売却）');
+      wineChoice = makeWine ? 'normal' : 'sell';
+    }
+
+    if (wineChoice === 'special' || wineChoice === 'normal') {
       // ワイン製造
-      const quality = Math.min(100,
+      let quality = Math.min(100,
         plot.health * 0.4 +
         plot.growth * 0.3 +
         (plot.fertilizer > 70 ? 20 : plot.fertilizer * 0.2) +
         grapeType.qualityBonus * 10
       );
 
+      let wineName = `${selectedRegion.name} ${grapeType.name}`;
+      let wineValue = Math.floor(grapeType.price * quality / 50);
+      let isSpecial = false;
+      let specialType = '';
+      let masteryBonus = 0;
+
+      // 特別ワインの場合
+      if (wineChoice === 'special' && specialWineInfo) {
+        quality = Math.min(100, quality + specialWineInfo.qualityBonus);
+        wineValue = Math.floor(wineValue * specialWineInfo.valueMultiplier);
+        wineName = `${specialWineInfo.name} (${selectedRegion.name})`;
+        isSpecial = true;
+        specialType = specialWineInfo.type;
+        masteryBonus = specialWineInfo.qualityBonus;
+      }
+
       const wine: Wine = {
         id: `wine_${Date.now()}_${plotId}`,
-        name: `${selectedRegion.name} ${grapeType.name}`,
+        name: wineName,
         grapeType: grapeType.name,
         region: selectedRegion.name,
         quality: Math.floor(quality),
         age: 0,
-        value: Math.floor(grapeType.price * quality / 50),
-        productionDate: day
+        value: wineValue,
+        productionDate: day,
+        isSpecial,
+        specialType,
+        masteryBonus
       };
 
       setWines(prev => [...prev, wine]);
       playHarvestSound();
-      showToast(`🍷 「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
+
+      if (isSpecial) {
+        showToast(`👑 「${wine.name}」のマスター級ワインが完成！品質: ${wine.quality}ポイント`);
+      } else {
+        showToast(`🍷 「${wine.name}」のワインが完成しました！品質: ${wine.quality}ポイント`);
+      }
 
       // ゴール達成チェック
       updateGoalProgress('wine_production', 1);
@@ -1133,7 +1233,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }
         : p
     ));
-  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound, showToast]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound, showToast, canCreateSpecialWine, getSpecialWineInfo]);
 
   // ワインを売る関数
   const sellWine = useCallback((wineId: string) => {
@@ -1579,20 +1679,35 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   <h3>🍷 ワインセラー</h3>
                   <div className="wines-grid">
                     {wines.map(wine => (
-                      <div key={wine.id} className="wine-item">
+                      <div key={wine.id} className={`wine-item ${wine.isSpecial ? 'special-wine' : ''}`}>
                         <div className="wine-header">
-                          <h4>{wine.name}</h4>
+                          <h4>
+                            {wine.isSpecial && <span className="special-wine-icon">👑</span>}
+                            {wine.name}
+                            {wine.isSpecial && <span className="special-wine-badge">マスター級</span>}
+                          </h4>
                           <span className="wine-age">{wine.age}日熟成</span>
                         </div>
                         <div className="wine-details">
-                          <span className="wine-quality">品質: ★{wine.quality}</span>
+                          <span className="wine-quality">
+                            品質: ★{wine.quality}
+                            {wine.masteryBonus && <small> (+{wine.masteryBonus})</small>}
+                          </span>
                           <span className="wine-value">価値: {Math.floor(wine.value * (1 + Math.floor(wine.age / 10) * 0.1))}円</span>
                         </div>
+                        {wine.isSpecial && (
+                          <div className="special-wine-description">
+                            {(() => {
+                              const specialInfo = getSpecialWineInfo(selectedRegion.koppenCode || '');
+                              return specialInfo ? <small>{specialInfo.description}</small> : null;
+                            })()}
+                          </div>
+                        )}
                         <button
                           onClick={() => sellWine(wine.id)}
-                          className="sell-wine-btn"
+                          className={`sell-wine-btn ${wine.isSpecial ? 'special' : ''}`}
                         >
-                          売却
+                          {wine.isSpecial ? '👑 売却' : '売却'}
                         </button>
                       </div>
                     ))}
