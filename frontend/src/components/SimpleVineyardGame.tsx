@@ -481,6 +481,64 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     return specialWines[koppenCode] || null;
   }, []);
 
+  // 気候区分別の天候解説を取得
+  const getClimateWeatherExplanation = useCallback((koppenCode: string, weather: string, season: string) => {
+    const explanations: Record<string, Record<string, Record<string, string>>> = {
+      'Cfb': {
+        '晴れ': {
+          'spring': '🌤️ Cfb（西岸海洋性気候）の春の晴れ。海洋の影響で穏やかな気候です。',
+          'summer': '☀️ Cfb気候の夏の晴れ。海洋性の影響で極端に暑くならず、ワイン栽培に適しています。',
+          'autumn': '🌤️ Cfb気候の秋の晴れ。収穫期に安定した天候が期待できる海洋性気候の特徴です。',
+          'winter': '🌤️ Cfb気候の冬の晴れ。海洋の温暖化効果で厳冬が少ないのが特徴です。'
+        },
+        '雨': {
+          'spring': '🌧️ Cfb気候の春の雨。年中降水があるのが西岸海洋性気候の特徴です。',
+          'summer': '🌦️ Cfb気候の夏の雨。乾燥期がなく、年中適度な降水があります。',
+          'autumn': '🌧️ Cfb気候の秋の雨。偏西風による雨がワインブドウに適度な水分を供給します。',
+          'winter': '🌧️ Cfb気候の冬の雨。温暖なため雪より雨が多いのが特徴です。'
+        }
+      },
+      'Csa': {
+        '晴れ': {
+          'summer': '☀️ Csa（地中海性気候）の夏の晴れ。乾燥した夏はワイン栽培に理想的です！',
+          'winter': '🌤️ Csa気候の冬の晴れ。温暖で穏やかな冬が特徴的です。'
+        },
+        '雨': {
+          'winter': '🌧️ Csa気候の冬の雨。冬に集中する降水が地中海性気候の特徴です。',
+          'spring': '🌦️ Csa気候の春の雨。冬から春にかけて降水があり、夏は乾燥します。'
+        }
+      },
+      'Csb': {
+        '晴れ': {
+          'summer': '🌤️ Csb（温帯地中海性気候）の夏の晴れ。Csaより涼しい夏が特徴です。',
+          'winter': '☀️ Csb気候の冬の晴れ。温暖で安定した気候です。'
+        },
+        '雨': {
+          'winter': '🌧️ Csb気候の冬の雨。地中海性の降水パターンを示しています。'
+        }
+      },
+      'Dfb': {
+        '晴れ': {
+          'summer': '☀️ Dfb（冷帯湿潤気候）の夏の晴れ。大陸性気候で夏は暖かくなります。',
+          'winter': '❄️ Dfb気候の冬の晴れ。大陸性気候特有の厳しい寒さが特徴です。'
+        },
+        '雨': {
+          'summer': '🌧️ Dfb気候の夏の雨。大陸性気候でも夏に降水があります。'
+        }
+      },
+      'BSk': {
+        '晴れ': {
+          'summer': '🌵 BSk（冷涼半乾燥気候）の晴れ。降水量が少ない乾燥気候の特徴です。',
+          'winter': '☀️ BSk気候の冬の晴れ。年中乾燥しているのが半乾燥気候の特徴です。'
+        }
+      }
+    };
+
+    return explanations[koppenCode]?.[weather]?.[season] ||
+           explanations[koppenCode]?.[weather]?.['summer'] ||
+           `🌍 ${koppenCode}気候の${weather}です。`;
+  }, []);
+
   // 地域変更時の処理
   const handleRegionChange = useCallback((region: WineRegion) => {
     setSelectedRegion(region);
@@ -934,7 +992,29 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     // 地域の気候に基づいた天気変更（30%の確率）
     if (Math.random() < 0.3) {
-      setCurrentWeather(getRegionalWeather(selectedRegion.id, Math.floor((day / 7) % 4)));
+      const oldWeather = currentWeather.name;
+      const newWeather = getRegionalWeather(selectedRegion.id, Math.floor((day / 7) % 4));
+
+      setCurrentWeather(newWeather);
+
+      // 天候が変わった場合、気候解説を表示
+      if (oldWeather !== newWeather.name) {
+        const seasonName = currentSeason.name;
+        const explanation = getClimateWeatherExplanation(
+          selectedRegion.koppenCode || '',
+          newWeather.name,
+          seasonName
+        );
+
+        // 経験値に応じて解説の詳しさを調整
+        const experience = regionExperience[selectedRegion.koppenCode || ''] || 0;
+        const masteryLevel = getClimateMasteryLevel(experience);
+
+        // 初心者向けには簡単な説明、上級者向けには詳細な説明
+        if (masteryLevel >= 2 && Math.random() < 0.4) { // 初級以上で40%の確率
+          showToast(explanation);
+        }
+      }
     }
 
     // 季節を変更（30日ごと）
@@ -944,6 +1024,36 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       if (newSeasonIndex !== currentSeasonIndex) {
         setCurrentSeasonIndex(newSeasonIndex);
         setCurrentSeason(SEASONS[newSeasonIndex]);
+
+        // 季節変化時の気候学習メッセージ
+        const experience = regionExperience[selectedRegion.koppenCode || ''] || 0;
+        const masteryLevel = getClimateMasteryLevel(experience);
+
+        if (masteryLevel >= 1) { // 入門以上で季節解説
+          const seasonMessages: Record<string, Record<string, string>> = {
+            'Cfb': {
+              'spring': '🌸 Cfb気候の春！海洋性の影響で温度変化が緩やか。ワイン栽培には理想的です。',
+              'summer': '🌞 Cfb気候の夏！暑すぎない穏やかな気温。極端な暑さがないのが特徴。',
+              'autumn': '🍂 Cfb気候の秋！収穫期に安定した天候が期待できます。',
+              'winter': '❄️ Cfb気候の冬！海洋の影響で厳寒にならず、比較的温暖。'
+            },
+            'Csa': {
+              'summer': '☀️ Csa気候の夏！乾燥した暑い夏がワイン栽培に最適！',
+              'winter': '🌧️ Csa気候の冬！温暖湿潤な冬が地中海性気候の特徴。'
+            },
+            'Dfb': {
+              'summer': '🌞 Dfb気候の夏！大陸性気候で暖かい夏。',
+              'winter': '❄️ Dfb気候の冬！厳しい寒さが大陸性気候の特徴。'
+            }
+          };
+
+          const seasonId = SEASONS[newSeasonIndex].name;
+          const message = seasonMessages[selectedRegion.koppenCode || '']?.[seasonId];
+
+          if (message && Math.random() < 0.6) { // 60%の確率で表示
+            setTimeout(() => showToast(message), 1000); // 1秒後に表示
+          }
+        }
 
         // 春の始まり（新年）に年次支払いチェック
         if (newSeasonIndex === 0 && newDay > DAYS_PER_YEAR && newDay > lastPaymentDay + DAYS_PER_YEAR - 10) {
@@ -1049,7 +1159,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     // ゲームオーバーチェック
     checkGameOver();
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -1572,7 +1682,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <span>📅 {day}日目</span>
             <span>{currentSeason.emoji} {currentSeason.name_jp}</span>
             <span>{currentWeather.emoji} {currentWeather.name}</span>
-            <span>🌍 {selectedRegion.climate}</span>
+            <span>🌍 {selectedRegion.koppenCode}気候 ({selectedRegion.climate})</span>
             <span>🍷 ワイン: {wines.length}本</span>
             <span>🍇 収穫: {totalHarvested}本</span>
           </div>
