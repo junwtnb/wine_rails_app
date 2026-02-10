@@ -1670,6 +1670,83 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           <span><span className="emoji">🍷</span>ワイン</span>
           <span className="value">{wines.length}本</span>
         </div>
+
+        {/* 気候知識ステータス */}
+        <div className="climate-knowledge-section">
+          <h4>🌍 気候マスタリー</h4>
+          {Object.entries(regionExperience).length > 0 ? (
+            Object.entries(regionExperience).map(([koppenCode, exp]) => {
+              const level = getClimateMasteryLevel(exp);
+              const masteryInfo = getClimateMasteryInfo(koppenCode);
+              const region = WINE_REGIONS.find(r => r.koppenCode === koppenCode);
+              const levelColors = ['#666', '#8B4513', '#228B22', '#4169E1', '#9932CC', '#FFD700'];
+              return (
+                <div key={koppenCode} className="climate-mastery-item">
+                  <span className="climate-code">{koppenCode}</span>
+                  <span className="mastery-badge" style={{color: levelColors[level]}}>
+                    {masteryInfo.levelIcon} {masteryInfo.levelName}
+                  </span>
+                  <span className="experience">{exp}XP</span>
+                </div>
+              );
+            })
+          ) : (
+            <div className="no-experience">
+              <span>まだ経験値なし</span>
+              <small>ゲームを進めて気候を学ぼう！</small>
+            </div>
+          )}
+
+          {/* 現在の地域のマスタリー情報 */}
+          {selectedRegion.koppenCode && (
+            <div className="current-region-mastery">
+              <div className="current-region-header">
+                📍 現在: {selectedRegion.koppenCode} ({selectedRegion.climate})
+              </div>
+              <div className="current-mastery-details">
+                {(() => {
+                  const currentExp = regionExperience[selectedRegion.koppenCode] || 0;
+                  const currentLevel = getClimateMasteryLevel(currentExp);
+                  const currentMasteryInfo = getClimateMasteryInfo(selectedRegion.koppenCode || '');
+                  const nextLevel = currentLevel < 5 ? currentLevel + 1 : 5;
+                  const levelColors = ['#666', '#8B4513', '#228B22', '#4169E1', '#9932CC', '#FFD700'];
+
+                  if (currentLevel < 5) {
+                    const expToNext = [1, 10, 30, 60, 100][currentLevel] - currentExp;
+                    const levelNames = ['未体験', '入門', '初級', '中級', '上級', 'マスター'];
+                    const levelIcons = ['❓', '🌱', '🌿', '🌳', '🌲', '👑'];
+                    return (
+                      <>
+                        <div className="current-level">
+                          <span style={{color: levelColors[currentLevel]}}>
+                            {currentMasteryInfo.levelIcon} {currentMasteryInfo.levelName}
+                          </span>
+                          <span className="exp-display">{currentExp}XP</span>
+                        </div>
+                        <div className="next-level-info">
+                          <small>
+                            次のレベルまで: {expToNext}XP
+                            <br />
+                            🎯 {levelIcons[nextLevel]} {levelNames[nextLevel]}
+                          </small>
+                        </div>
+                      </>
+                    );
+                  } else {
+                    return (
+                      <div className="master-achieved">
+                        <span style={{color: levelColors[currentLevel]}}>
+                          {currentMasteryInfo.levelIcon} {currentMasteryInfo.levelName}
+                        </span>
+                        <small>🎉 最高レベル達成！</small>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="vineyard-simulator">
