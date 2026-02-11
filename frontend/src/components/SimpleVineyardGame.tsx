@@ -391,12 +391,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [autoAdvanceSpeed, setAutoAdvanceSpeed] = useState(1000); // ミリ秒
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showClimateQuiz, setShowClimateQuiz] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // 気候マスターレベルシステム
   const [regionExperience, setRegionExperience] = useState<Record<string, number>>({});
-  const [climateMasteryLevel, setClimateMasteryLevel] = useState<Record<string, number>>({});
 
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
@@ -2079,12 +2077,6 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
                 <div className="learning-section">
                   <button
-                    onClick={() => setShowClimateQuiz(true)}
-                    className="game-action-btn learning-btn"
-                  >
-                    📚 気候区分クイズ
-                  </button>
-                  <button
                     onClick={async () => {
                       await initializeAudio();
                       await playSound(523.25, 0.5, 0.1); // テスト音（C5）
@@ -2124,61 +2116,6 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* 気候区分クイズモーダル */}
-        {showClimateQuiz && (
-          <div className="quiz-overlay">
-            <div className="quiz-container">
-              <div className="quiz-header">
-                <h2>📚 ケッペンの気候区分クイズ</h2>
-                <button onClick={() => setShowClimateQuiz(false)} className="close-btn">✕</button>
-              </div>
-              <div className="quiz-content">
-                <p>各ワイン産地のケッペンの気候区分を学習しましょう！</p>
-
-                <div className="climate-learning-cards">
-                  {WINE_REGIONS.map(region => (
-                    <div key={region.id} className="climate-card">
-                      <div className="card-header">
-                        <h4>{region.emoji} {region.name}</h4>
-                        <span className="country-tag">{region.country}</span>
-                      </div>
-                      <div className="climate-info">
-                        <div className="koppen-display">
-                          <span className="koppen-code">{region.koppenCode}</span>
-                          <span className="koppen-name">{region.koppenName}</span>
-                        </div>
-                        <p className="traditional-climate">従来の表記: {region.climate}</p>
-                        <p className="region-description">{region.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="koppen-explanation">
-                  <h3>ケッペンの気候区分について</h3>
-                  <div className="explanation-grid">
-                    <div className="explanation-item">
-                      <strong>Cfb - 西岸海洋性気候</strong>
-                      <p>温暖で降水量が年中豊富。海洋の影響で気温の年較差が小さい。</p>
-                    </div>
-                    <div className="explanation-item">
-                      <strong>Csa/Csb - 地中海性気候</strong>
-                      <p>夏は乾燥、冬は温暖で雨。ワイン栽培に理想的な気候。</p>
-                    </div>
-                    <div className="explanation-item">
-                      <strong>Dfb - 冷帯湿潤気候</strong>
-                      <p>寒暖の差が大きく、冬は寒冷。大陸性の特徴を持つ。</p>
-                    </div>
-                    <div className="explanation-item">
-                      <strong>BSk - 冷涼半乾燥気候</strong>
-                      <p>降水量が少なく乾燥。昼夜の気温差が大きい。</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* トースト通知（画面下部に固定表示） */}
         {toastMessage && (
