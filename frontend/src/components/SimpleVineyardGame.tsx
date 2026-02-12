@@ -2042,10 +2042,37 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </button>
                 {isAutoAdvancing && (
                   <div className="auto-speed-controls">
-                    <label>速度: </label>
-                    <button onClick={() => setAutoAdvanceSpeed(2000)}>遅い</button>
-                    <button onClick={() => setAutoAdvanceSpeed(1000)}>普通</button>
-                    <button onClick={() => setAutoAdvanceSpeed(500)}>早い</button>
+                    <label>
+                      速度: {autoAdvanceSpeed === 2000 ? '遅い (2秒/日)' :
+                             autoAdvanceSpeed === 1000 ? '普通 (1秒/日)' :
+                             autoAdvanceSpeed === 500 ? '早い (0.5秒/日)' :
+                             autoAdvanceSpeed === 200 ? '高速 (0.2秒/日)' :
+                             `${autoAdvanceSpeed}ms/日`}
+                    </label>
+                    <button
+                      onClick={() => setAutoAdvanceSpeed(2000)}
+                      className={autoAdvanceSpeed === 2000 ? 'active' : ''}
+                    >
+                      🐌 遅い
+                    </button>
+                    <button
+                      onClick={() => setAutoAdvanceSpeed(1000)}
+                      className={autoAdvanceSpeed === 1000 ? 'active' : ''}
+                    >
+                      🚶 普通
+                    </button>
+                    <button
+                      onClick={() => setAutoAdvanceSpeed(500)}
+                      className={autoAdvanceSpeed === 500 ? 'active' : ''}
+                    >
+                      🏃 早い
+                    </button>
+                    <button
+                      onClick={() => setAutoAdvanceSpeed(200)}
+                      className={autoAdvanceSpeed === 200 ? 'active' : ''}
+                    >
+                      🚀 高速
+                    </button>
                   </div>
                 )}
                 <div className="batch-actions">
