@@ -396,11 +396,21 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   // 気候マスターレベルシステム
   const [regionExperience, setRegionExperience] = useState<Record<string, number>>({});
 
+  // 冬限定アクティビティシステム
+  const [vineyardUpgrades, setVineyardUpgrades] = useState({
+    irrigationSystem: 0,    // 灌漑システム レベル 0-3
+    soilQuality: 0,         // 土壌品質 レベル 0-3
+    weatherProtection: 0,   // 天候保護 レベル 0-3
+    pruningTechnique: 0     // 剪定技術 レベル 0-3
+  });
+  const [lastWinterActivities, setLastWinterActivities] = useState<Record<string, number>>({});
+
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
   }, []);
+
 
   // 気候マスターレベル計算関数
   const getClimateMasteryLevel = useCallback((experience: number) => {
@@ -889,6 +899,124 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const playSuccessSound = useCallback(() => playMelody([523, 659, 784, 1047, 1319], 0.1), [playMelody]);
   const playErrorSound = useCallback(() => playMelody([220, 196, 175], 0.2), [playMelody]);
 
+  // 冬限定アクティビティのハンドラー関数
+  const performPruning = useCallback(() => {
+    if (currentSeason.name !== 'winter') {
+      showToast('剪定は冬の間にのみ実行できます');
+      return;
+    }
+
+    const cost = (vineyardUpgrades.pruningTechnique + 1) * 50;
+    if (money < cost) {
+      showToast(`剪定には${cost}円必要です`);
+      return;
+    }
+
+    if (lastWinterActivities.pruning === day) {
+      showToast('今日は既に剪定を行いました');
+      return;
+    }
+
+    setMoney(prev => prev - cost);
+    setVineyardUpgrades(prev => ({
+      ...prev,
+      pruningTechnique: Math.min(prev.pruningTechnique + 1, 3)
+    }));
+    setLastWinterActivities(prev => ({ ...prev, pruning: day }));
+
+    // 剪定により既存のブドウの健康度向上
+    setPlots(prevPlots => prevPlots.map(plot =>
+      plot.isPlanted ? { ...plot, health: Math.min(100, plot.health + 15) } : plot
+    ));
+
+    showToast(`🌿 剪定完了！技術レベル${vineyardUpgrades.pruningTechnique + 1}に向上しました`);
+    playSound(349.23, 0.3, 0.12); // F4音
+  }, [currentSeason, vineyardUpgrades, money, day, lastWinterActivities, showToast, playSound]);
+
+  const improveSoil = useCallback(() => {
+    if (currentSeason.name !== 'winter') {
+      showToast('土壌改良は冬の間にのみ実行できます');
+      return;
+    }
+
+    const cost = (vineyardUpgrades.soilQuality + 1) * 100;
+    if (money < cost) {
+      showToast(`土壌改良には${cost}円必要です`);
+      return;
+    }
+
+    if (lastWinterActivities.soil === day) {
+      showToast('今日は既に土壌改良を行いました');
+      return;
+    }
+
+    setMoney(prev => prev - cost);
+    setVineyardUpgrades(prev => ({
+      ...prev,
+      soilQuality: Math.min(prev.soilQuality + 1, 3)
+    }));
+    setLastWinterActivities(prev => ({ ...prev, soil: day }));
+
+    showToast(`🌍 土壌改良完了！品質レベル${vineyardUpgrades.soilQuality + 1}に向上しました`);
+    playSound(261.63, 0.4, 0.1); // C4音
+  }, [currentSeason, vineyardUpgrades, money, day, lastWinterActivities, showToast, playSound]);
+
+  const upgradeIrrigation = useCallback(() => {
+    if (currentSeason.name !== 'winter') {
+      showToast('灌漑設備の改良は冬の間にのみ実行できます');
+      return;
+    }
+
+    const cost = (vineyardUpgrades.irrigationSystem + 1) * 150;
+    if (money < cost) {
+      showToast(`灌漑設備改良には${cost}円必要です`);
+      return;
+    }
+
+    if (lastWinterActivities.irrigation === day) {
+      showToast('今日は既に灌漑設備の改良を行いました');
+      return;
+    }
+
+    setMoney(prev => prev - cost);
+    setVineyardUpgrades(prev => ({
+      ...prev,
+      irrigationSystem: Math.min(prev.irrigationSystem + 1, 3)
+    }));
+    setLastWinterActivities(prev => ({ ...prev, irrigation: day }));
+
+    showToast(`🚰 灌漑システム改良完了！レベル${vineyardUpgrades.irrigationSystem + 1}に向上しました`);
+    playSound(523.25, 0.3, 0.1); // C5音
+  }, [currentSeason, vineyardUpgrades, money, day, lastWinterActivities, showToast, playSound]);
+
+  const installWeatherProtection = useCallback(() => {
+    if (currentSeason.name !== 'winter') {
+      showToast('天候保護設備の設置は冬の間にのみ実行できます');
+      return;
+    }
+
+    const cost = (vineyardUpgrades.weatherProtection + 1) * 200;
+    if (money < cost) {
+      showToast(`天候保護設備には${cost}円必要です`);
+      return;
+    }
+
+    if (lastWinterActivities.weather === day) {
+      showToast('今日は既に天候保護設備の設置を行いました');
+      return;
+    }
+
+    setMoney(prev => prev - cost);
+    setVineyardUpgrades(prev => ({
+      ...prev,
+      weatherProtection: Math.min(prev.weatherProtection + 1, 3)
+    }));
+    setLastWinterActivities(prev => ({ ...prev, weather: day }));
+
+    showToast(`⛅ 天候保護設備完了！レベル${vineyardUpgrades.weatherProtection + 1}に向上しました`);
+    playSound(440, 0.35, 0.11); // A4音
+  }, [currentSeason, vineyardUpgrades, money, day, lastWinterActivities, showToast, playSound]);
+
   const plantGrape = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
 
@@ -1088,6 +1216,14 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       growthIncrease *= currentWeather.growthBonus; // 天気ボーナス
       growthIncrease *= currentSeason.growthBonus; // 季節ボーナス
 
+      // 冬のアップグレード効果
+      if (vineyardUpgrades.soilQuality > 0) {
+        growthIncrease *= (1 + vineyardUpgrades.soilQuality * 0.1); // 土壌品質ボーナス
+      }
+      if (vineyardUpgrades.weatherProtection > 0 && currentWeather.growthBonus < 1) {
+        growthIncrease *= (1 + vineyardUpgrades.weatherProtection * 0.15); // 悪天候保護
+      }
+
       // 水分レベルの影響
       if (plot.waterLevel < 20) growthIncrease *= 0.5; // 水不足で成長阻害
       if (plot.waterLevel > 80) growthIncrease *= 1.2; // 十分な水で成長促進
@@ -1102,11 +1238,22 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       let waterChange = currentWeather.waterLoss; // 天気による変化
       waterChange += grapeType.waterNeeds; // ブドウの種類による消費
 
+      // 灌漑システムの効果
+      if (vineyardUpgrades.irrigationSystem > 0) {
+        waterChange *= (1 - vineyardUpgrades.irrigationSystem * 0.2); // 水の消費を減らす
+      }
+
       // 肥料の消費
       const fertilizerConsumption = 0.5;
 
       // 病気システム
       let healthChange = 1; // 基本回復
+
+      // 剪定技術の効果
+      if (vineyardUpgrades.pruningTechnique > 0) {
+        healthChange += vineyardUpgrades.pruningTechnique * 0.5; // 健康度回復促進
+      }
+
       let diseaseGrowthPenalty = 1; // 成長ペナルティなし
 
       if (plot.disease) {
@@ -2083,6 +2230,53 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     🌱 一括施肥
                   </button>
                 </div>
+
+                {/* 冬限定アクティビティ */}
+                {currentSeason.name === 'winter' && (
+                  <div className="winter-activities">
+                    <h4>❄️ 冬の作業</h4>
+                    <div className="winter-upgrades-info">
+                      <div className="upgrade-status">
+                        <span>🌿 剪定技術: Lv.{vineyardUpgrades.pruningTechnique}</span>
+                        <span>🌍 土壌品質: Lv.{vineyardUpgrades.soilQuality}</span>
+                      </div>
+                      <div className="upgrade-status">
+                        <span>🚰 灌漑システム: Lv.{vineyardUpgrades.irrigationSystem}</span>
+                        <span>⛅ 天候保護: Lv.{vineyardUpgrades.weatherProtection}</span>
+                      </div>
+                    </div>
+                    <div className="winter-action-buttons">
+                      <button
+                        onClick={performPruning}
+                        className="game-action-btn winter-btn"
+                        disabled={vineyardUpgrades.pruningTechnique >= 3}
+                      >
+                        🌿 剪定作業 ({(vineyardUpgrades.pruningTechnique + 1) * 50}円)
+                      </button>
+                      <button
+                        onClick={improveSoil}
+                        className="game-action-btn winter-btn"
+                        disabled={vineyardUpgrades.soilQuality >= 3}
+                      >
+                        🌍 土壌改良 ({(vineyardUpgrades.soilQuality + 1) * 100}円)
+                      </button>
+                      <button
+                        onClick={upgradeIrrigation}
+                        className="game-action-btn winter-btn"
+                        disabled={vineyardUpgrades.irrigationSystem >= 3}
+                      >
+                        🚰 灌漑改良 ({(vineyardUpgrades.irrigationSystem + 1) * 150}円)
+                      </button>
+                      <button
+                        onClick={installWeatherProtection}
+                        className="game-action-btn winter-btn"
+                        disabled={vineyardUpgrades.weatherProtection >= 3}
+                      >
+                        ⛅ 天候保護 ({(vineyardUpgrades.weatherProtection + 1) * 200}円)
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="audio-controls">
                   <button
                     onClick={async () => {
