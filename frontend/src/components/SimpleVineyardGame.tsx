@@ -405,6 +405,9 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   });
   const [lastWinterActivities, setLastWinterActivities] = useState<Record<string, number>>({});
 
+  // 畑拡張システム
+  const [unlockedPlots, setUnlockedPlots] = useState(4); // 最初は4つの畑から開始
+
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
@@ -1016,6 +1019,32 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     showToast(`⛅ 天候保護設備完了！レベル${vineyardUpgrades.weatherProtection + 1}に向上しました`);
     playSound(440, 0.35, 0.11); // A4音
   }, [currentSeason, vineyardUpgrades, money, day, lastWinterActivities, showToast, playSound]);
+
+  // 畑拡張システム
+  const getPlotExpansionCost = useCallback((currentPlots: number) => {
+    // 段階的に高くなる価格設定
+    const costs = [0, 0, 0, 0, 300, 500, 800, 1200, 1800, 2500, 3500, 5000]; // 最初の4つは無料
+    return costs[currentPlots] || 10000; // 12個を超える場合は高額
+  }, []);
+
+  const expandVineyard = useCallback(() => {
+    if (unlockedPlots >= 12) {
+      showToast('畑は既に最大まで拡張されています');
+      return;
+    }
+
+    const cost = getPlotExpansionCost(unlockedPlots);
+    if (money < cost) {
+      showToast(`畑の拡張には${cost}円必要です`);
+      return;
+    }
+
+    setMoney(prev => prev - cost);
+    setUnlockedPlots(prev => prev + 1);
+
+    showToast(`🌾 新しい畑を解放しました！(${unlockedPlots + 1}/12)`);
+    playSuccessSound();
+  }, [unlockedPlots, money, getPlotExpansionCost, showToast, playSuccessSound]);
 
   const plantGrape = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -2096,19 +2125,39 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               <div className="vineyard-section">
                 <h4>🍇 ブドウ畑 - プロットをクリックして管理しよう！</h4>
                 <div className="grapes-grid">
-                  {plots.map(plot => (
-                    <div key={plot.id} className="plot-container">
-                      <div
-                        className={getPlotClass(plot)}
-                        onClick={() => {
-                          if (!plot.isPlanted) {
-                            plantGrape(plot.id);
-                          } else if (plot.growth >= 100) {
-                            harvestPlot(plot.id);
+                  {plots.map(plot => {
+                    const isUnlocked = plot.id <= unlockedPlots;
+                    const isNextToUnlock = plot.id === unlockedPlots + 1;
+
+                    return (
+                      <div key={plot.id} className="plot-container">
+                        <div
+                          className={
+                            !isUnlocked
+                              ? isNextToUnlock
+                                ? 'grape-plot locked next-unlock'
+                                : 'grape-plot locked'
+                              : getPlotClass(plot)
                           }
-                        }}
+                          onClick={() => {
+                            if (!isUnlocked) {
+                              if (isNextToUnlock) {
+                                expandVineyard();
+                              } else {
+                                showToast('まず前の畑を解放してください');
+                              }
+                            } else if (!plot.isPlanted) {
+                              plantGrape(plot.id);
+                            } else if (plot.growth >= 100) {
+                              harvestPlot(plot.id);
+                            }
+                          }}
                         title={
-                          !plot.isPlanted
+                          !isUnlocked
+                            ? isNextToUnlock
+                              ? `畑を拡張 - クリックで解放 (¥${getPlotExpansionCost(unlockedPlots)})`
+                              : '未解放の畑'
+                            : !plot.isPlanted
                             ? `空き地 - クリックで${selectedGrapeType.name}を植える (¥${selectedGrapeType.price})`
                             : plot.growth >= 100
                             ? `収穫可能！クリックで収穫`
@@ -2119,10 +2168,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                             : `${REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType)?.name || 'ブドウ'} - 成長: ${Math.floor(plot.growth)}% / 水: ${Math.floor(plot.waterLevel)}% / 肥料: ${Math.floor(plot.fertilizer)}% / 健康: ${Math.floor(plot.health)}%`
                         }
                       >
-                        {getPlotDisplay(plot)}
+                        {!isUnlocked
+                          ? isNextToUnlock
+                            ? '🔓'  // 次に解放可能
+                            : '🔒'  // 未解放
+                          : getPlotDisplay(plot)
+                        }
                       </div>
 
-                      {plot.isPlanted && plot.growth < 100 && (
+                      {isUnlocked && plot.isPlanted && plot.growth < 100 && (
                         <div className="plot-actions">
                           {plot.disease ? (
                             <button
@@ -2172,7 +2226,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -2308,7 +2363,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   </button>
                 </div>
                 <div className="game-stats">
-                  <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/12</p>
+                  <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/{unlockedPlots}</p>
+                  <p>解放済み畑: {unlockedPlots}/12</p>
                   <p>収穫可能: {plots.filter(p => p.growth >= 100 && p.canHarvest).length}</p>
                   <p className="season-info">
                     {currentSeason.plantingOptimal && '🌱 植え付け時期'}
