@@ -1184,6 +1184,31 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         const experience = regionExperience[selectedRegion.koppenCode || ''] || 0;
         const masteryLevel = getClimateMasteryLevel(experience);
 
+        // 秋の特別通知（収穫期の強調）
+        if (newSeasonIndex === 2) { // 秋になった時
+          const harvestableGrapes = plots.filter(p => p.growth >= 100).length;
+          showToast(`🍂 秋になりました！収穫の季節です！`);
+
+          if (harvestableGrapes > 0) {
+            setTimeout(() => {
+              showToast(`🍇 ${harvestableGrapes}個のブドウが収穫可能です！`);
+            }, 2000);
+          } else {
+            setTimeout(() => {
+              showToast(`🌱 まだ収穫できるブドウがありません。もう少し待ちましょう`);
+            }, 2000);
+          }
+        }
+
+        // その他季節の特別通知
+        if (newSeasonIndex === 0) { // 春
+          showToast(`🌸 春になりました！植え付けの季節です！`);
+        } else if (newSeasonIndex === 1) { // 夏
+          showToast(`🌞 夏になりました！成長の季節です！`);
+        } else if (newSeasonIndex === 3) { // 冬
+          showToast(`❄️ 冬になりました！設備投資の季節です！`);
+        }
+
         if (masteryLevel >= 1) { // 入門以上で季節解説
           const seasonMessages: Record<string, Record<string, string>> = {
             'Cfb': {
@@ -1206,7 +1231,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           const message = seasonMessages[selectedRegion.koppenCode || '']?.[seasonId];
 
           if (message && Math.random() < 0.6) { // 60%の確率で表示
-            setTimeout(() => showToast(message), 1000); // 1秒後に表示
+            setTimeout(() => showToast(message), 3500); // 他の通知の後に表示
           }
         }
 
@@ -1836,8 +1861,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <span className="value">{DAYS_PER_YEAR - (day % DAYS_PER_YEAR)}日後</span>
           </div>
         )}
-        <div className="resource-item">
-          <span><span className="emoji">{currentSeason.emoji}</span>{currentSeason.name_jp}</span>
+        <div className={`resource-item ${currentSeason.name === 'autumn' ? 'harvest-highlight' : ''}`}>
+          <span>
+            <span className="emoji">{currentSeason.emoji}</span>
+            {currentSeason.name === 'autumn' ? (
+              <span className="harvest-season-text">秋 - 収穫期！</span>
+            ) : (
+              currentSeason.name_jp
+            )}
+          </span>
           <span className="value">{currentWeather.emoji}</span>
         </div>
         <div className="resource-item">
@@ -1931,7 +1963,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <span>💧 {water}</span>
             <span>🌱 {fertilizer}</span>
             <span>📅 {day}日目</span>
-            <span>{currentSeason.emoji} {currentSeason.name_jp}</span>
+            <span className={currentSeason.name === 'autumn' ? 'harvest-highlight-text' : ''}>
+              {currentSeason.emoji}
+              {currentSeason.name === 'autumn' ? '秋 - 収穫期！' : currentSeason.name_jp}
+            </span>
             <span>{currentWeather.emoji} {currentWeather.name}</span>
             <span>🌍 {selectedRegion.koppenCode}気候 ({selectedRegion.climate})</span>
             <span>🍷 ワイン: {wines.length}本</span>
@@ -2366,10 +2401,24 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   <p>植えたブドウ: {plots.filter(p => p.isPlanted).length}/{unlockedPlots}</p>
                   <p>解放済み畑: {unlockedPlots}/12</p>
                   <p>収穫可能: {plots.filter(p => p.growth >= 100 && p.canHarvest).length}</p>
-                  <p className="season-info">
-                    {currentSeason.plantingOptimal && '🌱 植え付け時期'}
-                    {currentSeason.harvestPossible && '🍇 収穫時期'}
-                    {!currentSeason.plantingOptimal && !currentSeason.harvestPossible && '🕰️ 管理時期'}
+                  <p className={`season-info ${currentSeason.harvestPossible ? 'harvest-season' : ''}`}>
+                    {currentSeason.name === 'autumn' && (
+                      <span className="autumn-highlight">
+                        🍂 秋 - 収穫の季節！
+                        {plots.filter(p => p.growth >= 100 && p.canHarvest).length > 0 &&
+                          <span className="harvestable-count">
+                            ({plots.filter(p => p.growth >= 100 && p.canHarvest).length}個収穫可能)
+                          </span>
+                        }
+                      </span>
+                    )}
+                    {currentSeason.name !== 'autumn' && (
+                      <>
+                        {currentSeason.plantingOptimal && '🌱 植え付け時期'}
+                        {currentSeason.harvestPossible && '🍇 収穫時期'}
+                        {!currentSeason.plantingOptimal && !currentSeason.harvestPossible && '🕰️ 管理時期'}
+                      </>
+                    )}
                   </p>
 
                   {/* 気候マスターレベル表示 */}
