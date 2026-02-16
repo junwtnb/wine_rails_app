@@ -69,7 +69,7 @@ interface GameGoal {
   current: number;
   completed: boolean;
   reward: number;
-  type: 'money' | 'wine_production' | 'quality' | 'harvest';
+  type: 'money' | 'wine_production' | 'quality' | 'harvest' | 'plots' | 'days_survived' | 'quality_wines' | 'climate_mastery' | 'winter_upgrades' | 'special_wines' | 'master_quality';
 }
 
 interface WineRegion {
@@ -170,11 +170,24 @@ const ANNUAL_PAYMENTS: AnnualPayment[] = [
 ];
 
 const GAME_GOALS = [
+  // 初級ミッション
   { id: 'first_harvest', title: '初回収穫', description: 'ブドウを1本収穫する', target: 1, current: 0, completed: false, reward: 200, type: 'harvest' as const },
-  { id: 'wine_maker', title: 'ワイン醸造家', description: 'ワインを3本作る', target: 3, current: 0, completed: false, reward: 500, type: 'wine_production' as const },
-  { id: 'money_goal_1', title: '資産家への第一歩', description: '2000円を貯める', target: 2000, current: 1000, completed: false, reward: 0, type: 'money' as const },
-  { id: 'quality_master', title: '品質マスター', description: '品質90以上のワインを作る', target: 90, current: 0, completed: false, reward: 800, type: 'quality' as const },
-  { id: 'money_goal_2', title: '成功した醸造家', description: '5000円を貯める', target: 5000, current: 1000, completed: false, reward: 0, type: 'money' as const }
+  { id: 'expand_vineyard', title: '畑の拡張', description: '畑を6個まで拡張する', target: 6, current: 4, completed: false, reward: 400, type: 'plots' as const },
+  { id: 'wine_maker', title: 'ワイン醸造家', description: 'ワインを8本作る', target: 8, current: 0, completed: false, reward: 600, type: 'wine_production' as const },
+
+  // 中級ミッション
+  { id: 'seasonal_master', title: '季節マスター', description: '春夏秋冬を2回経験する（2年間運営）', target: 240, current: 0, completed: false, reward: 800, type: 'days_survived' as const },
+  { id: 'quality_master', title: '品質マスター', description: '品質85以上のワインを3本作る', target: 3, current: 0, completed: false, reward: 1000, type: 'quality_wines' as const },
+  { id: 'money_goal_1', title: '財産形成', description: '5000円を貯める', target: 5000, current: 1000, completed: false, reward: 0, type: 'money' as const },
+
+  // 上級ミッション
+  { id: 'climate_expert', title: '気候エキスパート', description: '3つの気候区分でマスターレベルに到達', target: 3, current: 0, completed: false, reward: 1500, type: 'climate_mastery' as const },
+  { id: 'winter_investor', title: '冬の投資家', description: '冬季設備を全てレベル3まで強化', target: 12, current: 0, completed: false, reward: 1200, type: 'winter_upgrades' as const },
+  { id: 'premium_producer', title: 'プレミアム生産者', description: '特別ワインを5本作る', target: 5, current: 0, completed: false, reward: 2000, type: 'special_wines' as const },
+
+  // 最終ミッション
+  { id: 'money_goal_2', title: 'ワイン帝国', description: '15000円を貯める', target: 15000, current: 1000, completed: false, reward: 0, type: 'money' as const },
+  { id: 'master_vintner', title: 'マスターヴィントナー', description: '品質90以上のワインを10本作る', target: 10, current: 0, completed: false, reward: 3000, type: 'master_quality' as const }
 ];
 
 const WINE_REGIONS: WineRegion[] = [
@@ -1117,6 +1130,73 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     playFertilizerSound();
   }, [fertilizer, gameOver, gameWon, playFertilizerSound, showToast]);
 
+  // 最近完了したゴールのトラッキング（重複通知を防ぐ）
+  const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
+
+  // ゴール進捗を更新する関数
+  const updateGoalProgress = useCallback((type: string, value: number) => {
+    setGoals(prev => prev.map(goal => {
+      if (goal.type === type && !goal.completed) {
+        let newCurrent = goal.current;
+
+        switch (type) {
+          case 'money':
+            newCurrent = money;
+            break;
+          case 'plots':
+            newCurrent = unlockedPlots;
+            break;
+          case 'days_survived':
+            newCurrent = day;
+            break;
+          case 'quality_wines':
+          case 'master_quality':
+            newCurrent = value >= (type === 'master_quality' ? 90 : 85) ? goal.current + 1 : goal.current;
+            break;
+          case 'climate_mastery':
+            // マスターレベル（5）に達した気候区分数をカウント
+            newCurrent = Object.values(regionExperience).filter(exp => getClimateMasteryLevel(exp) >= 5).length;
+            break;
+          case 'winter_upgrades':
+            // 全ての冬季設備のレベル合計
+            newCurrent = vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality +
+                        vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique;
+            break;
+          case 'special_wines':
+            // 特別ワインの総数
+            newCurrent = wines.filter(w => w.isSpecial).length;
+            break;
+          default:
+            newCurrent = goal.current + value;
+            break;
+        }
+
+        const completed = newCurrent >= goal.target;
+
+        if (completed && !goal.completed && goal.reward > 0 && !recentlyCompletedGoals.has(goal.title)) {
+          setMoney(prevMoney => prevMoney + goal.reward);
+          playSuccessSound();
+          showToast(`🏆 ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
+
+          // 重複通知を防ぐためにゴールをトラッキング
+          setRecentlyCompletedGoals(prevSet => new Set(prevSet).add(goal.title));
+
+          // 5秒後にトラッキングをクリア
+          setTimeout(() => {
+            setRecentlyCompletedGoals(prevSet => {
+              const newSet = new Set(prevSet);
+              newSet.delete(goal.title);
+              return newSet;
+            });
+          }, 5000);
+        }
+
+        return { ...goal, current: newCurrent, completed };
+      }
+      return goal;
+    }));
+  }, [money, unlockedPlots, day, regionExperience, getClimateMasteryLevel, vineyardUpgrades, wines, recentlyCompletedGoals, playSuccessSound, showToast]);
+
   const advanceDay = useCallback(() => {
     // ゲームオーバーまたは勝利時は処理を停止
     if (gameOver || gameWon) return;
@@ -1358,7 +1438,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     // ゲームオーバーチェック
     checkGameOver();
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience]);
+
+    // ミッション進捗の自動更新
+    updateGoalProgress('days_survived', day);
+    updateGoalProgress('plots', unlockedPlots);
+    updateGoalProgress('climate_mastery', Object.values(regionExperience).filter(exp => getClimateMasteryLevel(exp) >= 5).length);
+    updateGoalProgress('winter_upgrades', vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality + vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique);
+    updateGoalProgress('special_wines', wines.filter(w => w.isSpecial).length);
+    updateGoalProgress('money', money);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -1381,42 +1469,6 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     return () => clearInterval(interval);
   }, [isAutoAdvancing, autoAdvanceSpeed, gameOver, gameWon, advanceDay]);
 
-  // 最近完了したゴールのトラッキング（重複通知を防ぐ）
-  const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
-
-  // ゴール進捗を更新する関数
-  const updateGoalProgress = useCallback((type: string, value: number) => {
-    setGoals(prev => prev.map(goal => {
-      if (goal.type === type && !goal.completed) {
-        const newCurrent = type === 'money' ? money :
-                         type === 'quality' ? Math.max(goal.current, value) :
-                         goal.current + value;
-
-        const completed = newCurrent >= goal.target;
-
-        if (completed && !goal.completed && goal.reward > 0 && !recentlyCompletedGoals.has(goal.title)) {
-          setMoney(prevMoney => prevMoney + goal.reward);
-          playSuccessSound();
-          showToast(`🏆 ゴール達成！「${goal.title}」報酬: ${goal.reward}円`);
-
-          // 重複通知を防ぐためにゴールをトラッキング
-          setRecentlyCompletedGoals(prevSet => new Set(prevSet).add(goal.title));
-
-          // 5秒後にトラッキングをクリア
-          setTimeout(() => {
-            setRecentlyCompletedGoals(prevSet => {
-              const newSet = new Set(prevSet);
-              newSet.delete(goal.title);
-              return newSet;
-            });
-          }, 5000);
-        }
-
-        return { ...goal, current: newCurrent, completed };
-      }
-      return goal;
-    }));
-  }, [money, recentlyCompletedGoals, playSuccessSound, showToast]);
 
   const harvestPlot = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
