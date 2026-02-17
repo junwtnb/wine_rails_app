@@ -2103,7 +2103,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               <div className="game-goals">
                 <h3>🏆 ゲームゴール</h3>
                 <div className="goals-grid">
-                  {goals.map(goal => (
+                  {goals.filter(goal => !goal.completed).map(goal => (
                     <div key={goal.id} className={`goal-item ${goal.completed ? 'completed' : ''}`}>
                       <div className="goal-title">{goal.title}</div>
                       <div className="goal-description">{goal.description}</div>
