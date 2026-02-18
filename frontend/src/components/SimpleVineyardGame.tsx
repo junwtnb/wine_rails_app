@@ -928,6 +928,21 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
+    // 畑にブドウがない場合の警告
+    const plantedGrapes = plots.filter(p => p.isPlanted).length;
+    if (plantedGrapes === 0) {
+      const minGrapePrice = Math.min(...Object.values(REGIONAL_GRAPE_TYPES).flat().map(g => g.price));
+      const remainingMoney = money - cost;
+      if (remainingMoney < minGrapePrice) {
+        const confirmed = window.confirm(
+          `⚠️ 警告: 畑にブドウが植えられていません！\n` +
+          `剪定後の残金（${remainingMoney}円）では、最も安いブドウ（${minGrapePrice}円）も買えません。\n\n` +
+          `このまま剪定を実行しますか？`
+        );
+        if (!confirmed) return;
+      }
+    }
+
     if (lastWinterActivities.pruning === day) {
       showToast('今日は既に剪定を行いました');
       return;
@@ -961,6 +976,21 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
+    // 畑にブドウがない場合の警告
+    const plantedGrapes = plots.filter(p => p.isPlanted).length;
+    if (plantedGrapes === 0) {
+      const minGrapePrice = Math.min(...Object.values(REGIONAL_GRAPE_TYPES).flat().map(g => g.price));
+      const remainingMoney = money - cost;
+      if (remainingMoney < minGrapePrice) {
+        const confirmed = window.confirm(
+          `⚠️ 警告: 畑にブドウが植えられていません！\n` +
+          `土壌改良後の残金（${remainingMoney}円）では、最も安いブドウ（${minGrapePrice}円）も買えません。\n\n` +
+          `このまま土壌改良を実行しますか？`
+        );
+        if (!confirmed) return;
+      }
+    }
+
     if (lastWinterActivities.soil === day) {
       showToast('今日は既に土壌改良を行いました');
       return;
@@ -989,6 +1019,21 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
+    // 畑にブドウがない場合の警告
+    const plantedGrapes = plots.filter(p => p.isPlanted).length;
+    if (plantedGrapes === 0) {
+      const minGrapePrice = Math.min(...Object.values(REGIONAL_GRAPE_TYPES).flat().map(g => g.price));
+      const remainingMoney = money - cost;
+      if (remainingMoney < minGrapePrice) {
+        const confirmed = window.confirm(
+          `⚠️ 警告: 畑にブドウが植えられていません！\n` +
+          `灌漑設備改良後の残金（${remainingMoney}円）では、最も安いブドウ（${minGrapePrice}円）も買えません。\n\n` +
+          `このまま灌漑設備改良を実行しますか？`
+        );
+        if (!confirmed) return;
+      }
+    }
+
     if (lastWinterActivities.irrigation === day) {
       showToast('今日は既に灌漑設備の改良を行いました');
       return;
@@ -1015,6 +1060,21 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     if (money < cost) {
       showToast(`天候保護設備には${cost}円必要です`);
       return;
+    }
+
+    // 畑にブドウがない場合の警告
+    const plantedGrapes = plots.filter(p => p.isPlanted).length;
+    if (plantedGrapes === 0) {
+      const minGrapePrice = Math.min(...Object.values(REGIONAL_GRAPE_TYPES).flat().map(g => g.price));
+      const remainingMoney = money - cost;
+      if (remainingMoney < minGrapePrice) {
+        const confirmed = window.confirm(
+          `⚠️ 警告: 畑にブドウが植えられていません！\n` +
+          `天候保護設備設置後の残金（${remainingMoney}円）では、最も安いブドウ（${minGrapePrice}円）も買えません。\n\n` +
+          `このまま天候保護設備を設置しますか？`
+        );
+        if (!confirmed) return;
+      }
     }
 
     if (lastWinterActivities.weather === day) {
