@@ -72,6 +72,27 @@ interface GameGoal {
   type: 'money' | 'wine_production' | 'quality' | 'harvest' | 'plots' | 'days_survived' | 'quality_wines' | 'climate_mastery' | 'winter_upgrades' | 'special_wines' | 'master_quality';
 }
 
+interface CompetitionEntry {
+  playerName: string;
+  wineName: string;
+  quality: number;
+  isPlayer: boolean;
+  region: string;
+  grapeType: string;
+}
+
+interface Competition {
+  id: string;
+  name: string;
+  description: string;
+  entryFee: number;
+  prizes: number[];
+  minQuality: number;
+  season: string;
+  isActive: boolean;
+  entries: CompetitionEntry[];
+}
+
 interface WineRegion {
   id: string;
   name: string;
@@ -167,6 +188,61 @@ const ANNUAL_PAYMENTS: AnnualPayment[] = [
   { name: '設備維持費', amount: 300, description: '醸造設備の維持管理費', emoji: '🔧' },
   { name: '保険料', amount: 200, description: '災害保険の年間保険料', emoji: '🛡️' },
   { name: '税金', amount: 400, description: '事業税・固定資産税', emoji: '📋' }
+];
+
+// 品評会設定
+const WINE_COMPETITIONS: Competition[] = [
+  {
+    id: 'spring_new_wine',
+    name: '春の新酒品評会',
+    description: '新しく作られたワインの品質を競います',
+    entryFee: 100,
+    prizes: [800, 500, 200],
+    minQuality: 60,
+    season: 'spring',
+    isActive: false,
+    entries: []
+  },
+  {
+    id: 'summer_premium',
+    name: '夏のプレミアム品評会',
+    description: '高品質ワインのみ参加可能な品評会',
+    entryFee: 300,
+    prizes: [1500, 800, 400],
+    minQuality: 80,
+    season: 'summer',
+    isActive: false,
+    entries: []
+  },
+  {
+    id: 'autumn_harvest',
+    name: '秋の収穫祭品評会',
+    description: '収穫の季節を祝う特別な品評会',
+    entryFee: 200,
+    prizes: [1200, 600, 300],
+    minQuality: 70,
+    season: 'autumn',
+    isActive: false,
+    entries: []
+  },
+  {
+    id: 'winter_masters',
+    name: '冬のマスター品評会',
+    description: '最高品質のワインのみが参加できる品評会',
+    entryFee: 500,
+    prizes: [2500, 1200, 600],
+    minQuality: 90,
+    season: 'winter',
+    isActive: false,
+    entries: []
+  }
+];
+
+// AIプレイヤーの名前リスト
+const AI_PLAYER_NAMES = [
+  'フランソワ・デュボワ', 'マリア・ロッシ', '田中一郎', 'ハンス・ミュラー',
+  'カルロス・サンチェス', 'エミリー・スミス', 'ピエール・マルタン', 'アンナ・ノヴァク',
+  'ジョン・ウィルソン', 'ルチア・フェラーリ', 'ケンジ・サトウ', 'ミゲル・ガルシア'
 ];
 
 const GAME_GOALS = [
@@ -393,6 +469,9 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
   const [gamePhase, setGamePhase] = useState<'setup' | 'region_selection' | 'planting' | 'growing'>('setup');
   const [wines, setWines] = useState<Wine[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>(WINE_COMPETITIONS.map(c => ({ ...c })));
+  const [showCompetitions, setShowCompetitions] = useState(false);
+  const [competitionResults, setCompetitionResults] = useState<string | null>(null);
   const [goals, setGoals] = useState<GameGoal[]>(GAME_GOALS);
   const [totalHarvested, setTotalHarvested] = useState(0);
   const [gameWon, setGameWon] = useState(false);
@@ -1190,6 +1269,125 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     playFertilizerSound();
   }, [fertilizer, gameOver, gameWon, playFertilizerSound, showToast]);
 
+  // 品評会システム関数
+  const generateAICompetitors = useCallback((competition: Competition, numCompetitors: number = 8): CompetitionEntry[] => {
+    const competitors: CompetitionEntry[] = [];
+    const usedNames = new Set<string>();
+
+    for (let i = 0; i < numCompetitors; i++) {
+      let playerName: string;
+      do {
+        playerName = AI_PLAYER_NAMES[Math.floor(Math.random() * AI_PLAYER_NAMES.length)];
+      } while (usedNames.has(playerName));
+      usedNames.add(playerName);
+
+      // AIの品質は最低品質から+30の範囲でランダム生成
+      const baseQuality = competition.minQuality + Math.random() * 30;
+      const quality = Math.floor(Math.min(100, baseQuality + (Math.random() - 0.5) * 20));
+
+      const regions = Object.keys(WINE_REGIONS);
+      const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+      const grapeTypes = Object.values(REGIONAL_GRAPE_TYPES).flat();
+      const randomGrape = grapeTypes[Math.floor(Math.random() * grapeTypes.length)];
+
+      competitors.push({
+        playerName,
+        wineName: `${randomRegion} ${randomGrape.name}`,
+        quality,
+        isPlayer: false,
+        region: randomRegion,
+        grapeType: randomGrape.name
+      });
+    }
+
+    return competitors;
+  }, []);
+
+  const activateSeasonalCompetition = useCallback(() => {
+    const currentSeasonName = currentSeason.name;
+
+    setCompetitions(prev => prev.map(competition => {
+      if (competition.season === currentSeasonName && !competition.isActive) {
+        const aiCompetitors = generateAICompetitors(competition);
+        return {
+          ...competition,
+          isActive: true,
+          entries: aiCompetitors
+        };
+      }
+      return competition;
+    }));
+
+    // 品評会開始の通知
+    const activeCompetition = WINE_COMPETITIONS.find(c => c.season === currentSeasonName);
+    if (activeCompetition) {
+      showToast(`🏆 ${activeCompetition.name}が開始されました！`);
+    }
+  }, [currentSeason.name, generateAICompetitors, showToast]);
+
+  const enterCompetition = useCallback((competitionId: string, wineId: string) => {
+    const wine = wines.find(w => w.id === wineId);
+    const competition = competitions.find(c => c.id === competitionId);
+
+    if (!wine || !competition) return;
+
+    if (wine.quality < competition.minQuality) {
+      showToast(`品質${competition.minQuality}以上のワインが必要です（現在: ${wine.quality}）`);
+      return;
+    }
+
+    if (money < competition.entryFee) {
+      showToast(`参加費${competition.entryFee}円が必要です`);
+      return;
+    }
+
+    // 参加費を支払い
+    setMoney(prev => prev - competition.entryFee);
+
+    // プレイヤーのエントリーを追加
+    const playerEntry: CompetitionEntry = {
+      playerName: 'あなた',
+      wineName: wine.name,
+      quality: wine.quality,
+      isPlayer: true,
+      region: wine.region,
+      grapeType: wine.grapeType
+    };
+
+    // 品評会結果を計算
+    const allEntries = [...competition.entries, playerEntry].sort((a, b) => b.quality - a.quality);
+    const playerRank = allEntries.findIndex(entry => entry.isPlayer) + 1;
+
+    // 結果メッセージを生成
+    let resultMessage = `🏆 ${competition.name}の結果発表！\n\n`;
+    allEntries.slice(0, 3).forEach((entry, index) => {
+      const medal = ['🥇', '🥈', '🥉'][index];
+      const isPlayer = entry.isPlayer ? '★' : '';
+      resultMessage += `${medal} ${index + 1}位: ${entry.playerName}${isPlayer} - ${entry.wineName} (品質: ${entry.quality})\n`;
+    });
+
+    if (playerRank <= 3) {
+      const prize = competition.prizes[playerRank - 1];
+      setMoney(prev => prev + prize);
+      resultMessage += `\n🎉 おめでとうございます！${playerRank}位入賞で${prize}円の賞金を獲得しました！`;
+      playSuccessSound();
+    } else {
+      resultMessage += `\n📊 あなたの順位: ${playerRank}位/${allEntries.length}参加者中`;
+      resultMessage += `\n残念ながら入賞には届きませんでした。次回頑張りましょう！`;
+    }
+
+    setCompetitionResults(resultMessage);
+
+    // 品評会を非アクティブに
+    setCompetitions(prev => prev.map(c =>
+      c.id === competitionId ? { ...c, isActive: false, entries: [] } : c
+    ));
+
+    // ワインを消費
+    setWines(prev => prev.filter(w => w.id !== wineId));
+
+  }, [wines, competitions, money, showToast, playSuccessSound]);
+
   // 最近完了したゴールのトラッキング（重複通知を防ぐ）
   const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
 
@@ -1349,6 +1547,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           showToast(`❄️ 冬になりました！設備投資の季節です！`);
         }
 
+        // 季節ごとの品評会を開始
+        setTimeout(() => {
+          activateSeasonalCompetition();
+        }, 3000); // 季節通知の後に品評会通知を表示
+
         if (masteryLevel >= 1) { // 入門以上で季節解説
           const seasonMessages: Record<string, Record<string, string>> = {
             'Cfb': {
@@ -1506,7 +1709,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     updateGoalProgress('winter_upgrades', vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality + vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique);
     updateGoalProgress('special_wines', wines.filter(w => w.isSpecial).length);
     updateGoalProgress('money', money);
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -2223,6 +2426,52 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
               )}
 
+              {/* 品評会 */}
+              {competitions.some(c => c.isActive) && (
+                <div className="competitions-section">
+                  <h3>🏆 開催中の品評会</h3>
+                  <div className="competitions-grid">
+                    {competitions.filter(c => c.isActive).map(competition => (
+                      <div key={competition.id} className="competition-item">
+                        <div className="competition-header">
+                          <h4>{competition.name}</h4>
+                          <span className="competition-fee">参加費: {competition.entryFee}円</span>
+                        </div>
+                        <p className="competition-description">{competition.description}</p>
+                        <div className="competition-requirements">
+                          <span>最低品質: {competition.minQuality}</span>
+                          <span>賞金: 🥇{competition.prizes[0]}円 🥈{competition.prizes[1]}円 🥉{competition.prizes[2]}円</span>
+                        </div>
+                        <div className="competition-participants">
+                          <small>参加者: {competition.entries.length + 1}名</small>
+                        </div>
+                        <div className="eligible-wines">
+                          <h5>参加可能ワイン:</h5>
+                          {wines.filter(w => w.quality >= competition.minQuality).length === 0 ? (
+                            <p className="no-eligible-wines">品質{competition.minQuality}以上のワインがありません</p>
+                          ) : (
+                            wines.filter(w => w.quality >= competition.minQuality).map(wine => (
+                              <div key={wine.id} className="eligible-wine">
+                                <span className="wine-info">
+                                  {wine.isSpecial && '👑'} {wine.name} (品質: {wine.quality})
+                                </span>
+                                <button
+                                  onClick={() => enterCompetition(competition.id, wine.id)}
+                                  className="enter-competition-btn"
+                                  disabled={money < competition.entryFee}
+                                >
+                                  参加する
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {gameWon && (
                 <div className="game-won">
                   <h2>🏆 ゲームクリア！</h2>
@@ -2554,6 +2803,23 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           )}
         </div>
 
+
+        {/* 品評会結果モーダル */}
+        {competitionResults && (
+          <div className="competition-results-overlay">
+            <div className="competition-results-modal">
+              <div className="results-content">
+                <pre className="results-text">{competitionResults}</pre>
+                <button
+                  onClick={() => setCompetitionResults(null)}
+                  className="close-results-btn"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* トースト通知（画面下部に固定表示） */}
         {toastMessage && (
