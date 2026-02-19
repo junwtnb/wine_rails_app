@@ -16,6 +16,7 @@ interface Plot {
   diseaseDay: number; // 病気になった日
   lastDisaster: string | null; // 最後に受けた災害ID
   disasterDay: number; // 災害を受けた日
+  terroir: string; // テロワールID
 }
 
 interface Disease {
@@ -91,6 +92,18 @@ interface Competition {
   season: string;
   isActive: boolean;
   entries: CompetitionEntry[];
+}
+
+interface Terroir {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  drainageBonus: number;      // 水はけ効果 (1.0 = 普通, >1.0 = 良い, <1.0 = 悪い)
+  sunlightBonus: number;      // 日照効果
+  qualityMultiplier: number;  // 品質ボーナス
+  costMultiplier: number;     // 土地価格倍率
+  specialEffects: string[];   // 特殊効果
 }
 
 interface WineRegion {
@@ -188,6 +201,50 @@ const ANNUAL_PAYMENTS: AnnualPayment[] = [
   { name: '設備維持費', amount: 300, description: '醸造設備の維持管理費', emoji: '🔧' },
   { name: '保険料', amount: 200, description: '災害保険の年間保険料', emoji: '🛡️' },
   { name: '税金', amount: 400, description: '事業税・固定資産税', emoji: '📋' }
+];
+
+// テロワール（土地特性）設定
+const TERROIRS: Terroir[] = [
+  {
+    id: 'hillside',
+    name: '丘陵地',
+    emoji: '🏔️',
+    description: '水はけが良く、日照に恵まれた高品質区画',
+    drainageBonus: 1.3,
+    sunlightBonus: 1.2,
+    qualityMultiplier: 1.25,
+    costMultiplier: 1.8,
+    specialEffects: ['干ばつ耐性', '高品質ボーナス']
+  },
+  {
+    id: 'valley',
+    name: '平地',
+    emoji: '🌾',
+    description: '標準的な栽培環境、バランスの取れた区画',
+    drainageBonus: 1.0,
+    sunlightBonus: 1.0,
+    qualityMultiplier: 1.0,
+    costMultiplier: 1.0,
+    specialEffects: ['標準栽培']
+  },
+  {
+    id: 'riverside',
+    name: '川沿い',
+    emoji: '🌊',
+    description: '水資源豊富だが湿気が多い区画',
+    drainageBonus: 0.7,
+    sunlightBonus: 0.9,
+    qualityMultiplier: 0.9,
+    costMultiplier: 0.6,
+    specialEffects: ['水資源豊富', '病気リスク高']
+  }
+];
+
+// 畑の初期配置パターン（12個の区画のテロワール）
+const PLOT_TERROIR_LAYOUT = [
+  'hillside', 'hillside', 'valley', 'valley',     // 1-4: 丘陵2, 平地2
+  'valley', 'valley', 'riverside', 'riverside',   // 5-8: 平地2, 川沿い2
+  'hillside', 'valley', 'riverside', 'hillside'   // 9-12: 混合
 ];
 
 // 品評会設定
@@ -426,9 +483,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       disease: null,
       diseaseDay: 0,
       lastDisaster: null,
-      disasterDay: 0
+      disasterDay: 0,
+      terroir: PLOT_TERROIR_LAYOUT[i]
     }))
   );
+
+  // テロワール取得関数
+  const getTerroir = useCallback((terroirId: string): Terroir => {
+    return TERROIRS.find(t => t.id === terroirId) || TERROIRS[1]; // 見つからない場合は平地をデフォルト
+  }, []);
 
   // 地域の気候に基づいた天気を取得する関数
   const getRegionalWeather = useCallback((regionId: string, seasonIndex: number) => {
@@ -1185,18 +1248,24 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       return;
     }
 
-    const cost = getPlotExpansionCost(unlockedPlots);
-    if (money < cost) {
-      showToast(`畑の拡張には${cost}円必要です`);
+    const baseCost = getPlotExpansionCost(unlockedPlots);
+    const nextPlotTerroir = getTerroir(PLOT_TERROIR_LAYOUT[unlockedPlots]);
+    const actualCost = Math.floor(baseCost * nextPlotTerroir.costMultiplier);
+
+    if (money < actualCost) {
+      showToast(`畑の拡張には${actualCost}円必要です（${nextPlotTerroir.emoji} ${nextPlotTerroir.name}）`);
       return;
     }
 
-    setMoney(prev => prev - cost);
+    setMoney(prev => prev - actualCost);
     setUnlockedPlots(prev => prev + 1);
 
-    showToast(`🌾 新しい畑を解放しました！(${unlockedPlots + 1}/12)`);
+    showToast(`${nextPlotTerroir.emoji} 新しい${nextPlotTerroir.name}を解放しました！(${unlockedPlots + 1}/12)`);
+    setTimeout(() => {
+      showToast(`💡 ${nextPlotTerroir.description}`);
+    }, 2000);
     playSuccessSound();
-  }, [unlockedPlots, money, getPlotExpansionCost, showToast, playSuccessSound]);
+  }, [unlockedPlots, money, getPlotExpansionCost, getTerroir, showToast, playSuccessSound]);
 
   const plantGrape = useCallback((plotId: number) => {
     if (gameOver || gameWon) return;
@@ -1631,6 +1700,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       // 健康度の影響
       growthIncrease *= (plot.health / 100);
 
+      // テロワールの影響
+      const terroir = getTerroir(plot.terroir);
+      growthIncrease *= terroir.sunlightBonus; // 日照効果
+
       // 水分レベルの変化
       let waterChange = currentWeather.waterLoss; // 天気による変化
       waterChange += grapeType.waterNeeds; // ブドウの種類による消費
@@ -1639,6 +1712,9 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       if (vineyardUpgrades.irrigationSystem > 0) {
         waterChange *= (1 - vineyardUpgrades.irrigationSystem * 0.2); // 水の消費を減らす
       }
+
+      // テロワールの排水効果
+      waterChange *= terroir.drainageBonus; // 排水が良いと水の減少が緩やか
 
       // 肥料の消費
       const fertilizerConsumption = 0.5;
@@ -1709,7 +1785,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     updateGoalProgress('winter_upgrades', vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality + vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique);
     updateGoalProgress('special_wines', wines.filter(w => w.isSpecial).length);
     updateGoalProgress('money', money);
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition, getTerroir]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -1776,11 +1852,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     if (wineChoice === 'special' || wineChoice === 'normal') {
       // ワイン製造
+      const plotTerroir = getTerroir(plot.terroir);
       let quality = Math.min(100,
-        plot.health * 0.4 +
+        (plot.health * 0.4 +
         plot.growth * 0.3 +
         (plot.fertilizer > 70 ? 20 : plot.fertilizer * 0.2) +
-        grapeType.qualityBonus * 10
+        grapeType.qualityBonus * 10) * plotTerroir.qualityMultiplier
       );
 
       let wineName = `${selectedRegion.name} ${grapeType.name}`;
@@ -2549,19 +2626,26 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                             }
                           }}
                         title={
-                          !isUnlocked
-                            ? isNextToUnlock
-                              ? `畑を拡張 - クリックで解放 (¥${getPlotExpansionCost(unlockedPlots)})`
-                              : '未解放の畑'
-                            : !plot.isPlanted
-                            ? `空き地 - クリックで${selectedGrapeType.name}を植える (¥${selectedGrapeType.price})`
-                            : plot.growth >= 100
-                            ? `収穫可能！クリックで収穫`
-                            : plot.disease
-                            ? `病気: ${DISEASES.find(d => d.id === plot.disease)?.name} - 治療費: ${DISEASES.find(d => d.id === plot.disease)?.treatmentCost}円`
-                            : plot.lastDisaster && (day - plot.disasterDay) <= 3
-                            ? `災害被害: ${DISASTERS.find(d => d.id === plot.lastDisaster)?.name} (${3 - (day - plot.disasterDay)}日前) - ${DISASTERS.find(d => d.id === plot.lastDisaster)?.damage}`
-                            : `${REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType)?.name || 'ブドウ'} - 成長: ${Math.floor(plot.growth)}% / 水: ${Math.floor(plot.waterLevel)}% / 肥料: ${Math.floor(plot.fertilizer)}% / 健康: ${Math.floor(plot.health)}%`
+                          (() => {
+                            const plotTerroir = getTerroir(plot.terroir);
+                            const terroirInfo = `${plotTerroir.emoji} ${plotTerroir.name} - ${plotTerroir.description}`;
+
+                            if (!isUnlocked) {
+                              return isNextToUnlock
+                                ? `${terroirInfo}\n畑を拡張 - クリックで解放 (¥${Math.floor(getPlotExpansionCost(unlockedPlots) * plotTerroir.costMultiplier)})`
+                                : `${terroirInfo}\n未解放の畑`;
+                            } else if (!plot.isPlanted) {
+                              return `${terroirInfo}\n空き地 - クリックで${selectedGrapeType.name}を植える (¥${selectedGrapeType.price})`;
+                            } else if (plot.growth >= 100) {
+                              return `${terroirInfo}\n収穫可能！クリックで収穫`;
+                            } else if (plot.disease) {
+                              return `${terroirInfo}\n病気: ${DISEASES.find(d => d.id === plot.disease)?.name} - 治療費: ${DISEASES.find(d => d.id === plot.disease)?.treatmentCost}円`;
+                            } else if (plot.lastDisaster && (day - plot.disasterDay) <= 3) {
+                              return `${terroirInfo}\n災害被害: ${DISASTERS.find(d => d.id === plot.lastDisaster)?.name} (${3 - (day - plot.disasterDay)}日前) - ${DISASTERS.find(d => d.id === plot.lastDisaster)?.damage}`;
+                            } else {
+                              return `${terroirInfo}\n${REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType)?.name || 'ブドウ'} - 成長: ${Math.floor(plot.growth)}% / 水: ${Math.floor(plot.waterLevel)}% / 肥料: ${Math.floor(plot.fertilizer)}% / 健康: ${Math.floor(plot.health)}%`;
+                            }
+                          })()
                         }
                       >
                         {!isUnlocked
@@ -2570,6 +2654,23 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                             : '🔒'  // 未解放
                           : getPlotDisplay(plot)
                         }
+                        {isUnlocked && (
+                          <div className="terroir-badge" style={{
+                            position: 'absolute',
+                            top: '2px',
+                            right: '2px',
+                            fontSize: '12px',
+                            backgroundColor: 'rgba(255,255,255,0.8)',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {getTerroir(plot.terroir).emoji}
+                          </div>
+                        )}
                       </div>
 
                       {isUnlocked && plot.isPlanted && plot.growth < 100 && (
