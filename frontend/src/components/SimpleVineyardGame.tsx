@@ -535,6 +535,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [competitions, setCompetitions] = useState<Competition[]>(WINE_COMPETITIONS.map(c => ({ ...c })));
   const [showCompetitions, setShowCompetitions] = useState(false);
   const [competitionResults, setCompetitionResults] = useState<string | null>(null);
+  const [showRegionMigration, setShowRegionMigration] = useState(false);
   const [goals, setGoals] = useState<GameGoal[]>(GAME_GOALS);
   const [totalHarvested, setTotalHarvested] = useState(0);
   const [gameWon, setGameWon] = useState(false);
@@ -1457,6 +1458,75 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
   }, [wines, competitions, money, showToast, playSuccessSound]);
 
+  // 地域移住システム
+  const getMigrationCost = useCallback((targetRegionId: string) => {
+    const basePrice = 5000; // 基本移住費用
+    const plantedPlots = plots.filter(p => p.isPlanted).length;
+    const wineLoss = wines.length * 1000; // ワインの価値損失
+    const plotResetCost = plantedPlots * 500; // 植えたブドウのリセット費用
+
+    return basePrice + wineLoss + plotResetCost;
+  }, [plots, wines.length]);
+
+  const migrateToRegion = useCallback((newRegionId: string) => {
+    const newRegion = WINE_REGIONS.find(r => r.id === newRegionId);
+    if (!newRegion || newRegion.id === selectedRegion.id) return;
+
+    const migrationCost = getMigrationCost(newRegionId);
+
+    if (money < migrationCost) {
+      showToast(`移住には${migrationCost}円必要です`);
+      return;
+    }
+
+    // 移住の確認ダイアログ
+    const plantedPlots = plots.filter(p => p.isPlanted).length;
+    const confirmMessage = plantedPlots > 0 || wines.length > 0
+      ? `${newRegion.name}への移住を実行しますか？\n\n⚠️ 以下が失われます：\n・植えられたブドウ: ${plantedPlots}本\n・保管中のワイン: ${wines.length}本\n・移住費用: ${migrationCost}円\n\n※気候マスタリー経験は保持されます`
+      : `${newRegion.name}への移住を実行しますか？\n費用: ${migrationCost}円`;
+
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) return;
+
+    // 移住を実行
+    setMoney(prev => prev - migrationCost);
+    setSelectedRegion(newRegion);
+
+    // 畑をリセット（テロワールは保持）
+    setPlots(prevPlots => prevPlots.map(plot => ({
+      ...plot,
+      isPlanted: false,
+      grapeType: '',
+      growth: 0,
+      plantedDay: 0,
+      plantedSeason: 0,
+      waterLevel: 50,
+      fertilizer: 30,
+      health: 100,
+      canHarvest: false,
+      disease: null,
+      diseaseDay: 0,
+      lastDisaster: null,
+      disasterDay: 0
+    })));
+
+    // ワインをクリア
+    setWines([]);
+
+    // 新しい地域の天気に更新
+    const newWeather = getRegionalWeather(newRegionId, currentSeasonIndex);
+    setCurrentWeather(newWeather);
+
+    // 成功メッセージ
+    showToast(`🌍 ${newRegion.name}へ移住しました！新たなワイン作りの始まりです`);
+    setTimeout(() => {
+      showToast(`🌡️ ${newRegion.koppenCode}気候 - ${newRegion.description}`);
+    }, 3000);
+
+    playSuccessSound();
+    setShowRegionMigration(false);
+  }, [selectedRegion.id, getMigrationCost, money, plots, wines.length, showToast, getRegionalWeather, currentSeasonIndex, playSuccessSound]);
+
   // 最近完了したゴールのトラッキング（重複通知を防ぐ）
   const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
 
@@ -2344,6 +2414,19 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               </div>
             </div>
           )}
+
+          {/* 移住ボタン */}
+          <div className="migration-section">
+            <button
+              onClick={() => setShowRegionMigration(true)}
+              className="migration-btn"
+              disabled={day < 30} // 最初の30日は移住不可
+              title={day < 30 ? "30日経過後に移住可能になります" : "他の地域に移住して新しい気候を体験"}
+            >
+              🌍 地域移住
+            </button>
+            {day < 30 && <small className="migration-note">30日経過後に解禁</small>}
+          </div>
         </div>
       </div>
 
@@ -2904,6 +2987,87 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           )}
         </div>
 
+
+        {/* 地域移住モーダル */}
+        {showRegionMigration && (
+          <div className="migration-overlay">
+            <div className="migration-modal">
+              <div className="migration-header">
+                <h3>🌍 地域移住</h3>
+                <button
+                  onClick={() => setShowRegionMigration(false)}
+                  className="close-btn"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="migration-content">
+                <div className="current-region-info">
+                  <h4>現在の地域: {selectedRegion.emoji} {selectedRegion.name}</h4>
+                  <p>{selectedRegion.koppenCode} - {selectedRegion.description}</p>
+                  <div className="mastery-status">
+                    {(() => {
+                      const exp = regionExperience[selectedRegion.koppenCode || ''] || 0;
+                      const masteryInfo = getClimateMasteryInfo(selectedRegion.koppenCode || '');
+                      return (
+                        <span>
+                          {masteryInfo.levelIcon} {masteryInfo.levelName} ({exp}XP)
+                          {masteryInfo.isMaster && ' ✅'}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <div className="available-regions">
+                  <h4>移住可能な地域:</h4>
+                  <div className="regions-grid">
+                    {WINE_REGIONS.filter(region => region.id !== selectedRegion.id).map(region => {
+                      const migrationCost = getMigrationCost(region.id);
+                      const exp = regionExperience[region.koppenCode || ''] || 0;
+                      const masteryInfo = getClimateMasteryInfo(region.koppenCode || '');
+
+                      return (
+                        <div key={region.id} className="region-option">
+                          <div className="region-header">
+                            <h5>{region.emoji} {region.name}</h5>
+                            <div className="region-climate">{region.koppenCode}</div>
+                          </div>
+                          <p className="region-description">{region.description}</p>
+                          <div className="region-mastery">
+                            マスタリー: {masteryInfo.levelIcon} {masteryInfo.levelName} ({exp}XP)
+                            {masteryInfo.isMaster && ' ✅'}
+                          </div>
+                          <div className="migration-cost">
+                            移住費用: {migrationCost}円
+                          </div>
+                          <button
+                            onClick={() => migrateToRegion(region.id)}
+                            className="migrate-btn"
+                            disabled={money < migrationCost}
+                          >
+                            {money >= migrationCost ? '移住する' : '資金不足'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="migration-warning">
+                  <h4>⚠️ 移住時の注意</h4>
+                  <ul>
+                    <li>植えられているブドウはすべて失われます</li>
+                    <li>保管中のワインはすべて失われます</li>
+                    <li>気候マスタリー経験値は保持されます</li>
+                    <li>畑の拡張状況とテロワールは保持されます</li>
+                    <li>設備投資（剪定技術等）は保持されます</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 品評会結果モーダル */}
         {competitionResults && (
