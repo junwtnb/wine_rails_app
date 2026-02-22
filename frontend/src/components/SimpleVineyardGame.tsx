@@ -1971,7 +1971,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
       // ゴール達成チェック
       updateGoalProgress('wine_production', 1);
-      updateGoalProgress('quality', wine.quality);
+      updateGoalProgress('quality_wines', wine.quality); // 品質85以上のワイン用
+      updateGoalProgress('master_quality', wine.quality); // 品質90以上のワイン用
     } else {
       // そのまま売却
       const harvestValue = Math.floor(grapeType.price * 0.8);
