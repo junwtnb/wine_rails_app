@@ -106,6 +106,28 @@ interface Terroir {
   specialEffects: string[];   // 特殊効果
 }
 
+interface Staff {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  hiringCost: number;
+  monthlySalary: number;
+  specialties: string[];
+  autoActions: string[];      // 自動実行する作業
+  efficiency: number;         // 作業効率 (1.0 = 通常, >1.0 = 高効率)
+  experience: number;         // 経験値 (0-100)
+  level: number;             // レベル (1-5)
+}
+
+interface HiredStaff {
+  staffId: string;
+  hiredDay: number;
+  experience: number;
+  level: number;
+  lastSalaryPaid: number;
+}
+
 interface WineRegion {
   id: string;
   name: string;
@@ -124,6 +146,33 @@ interface WineRegion {
     winter: { temp: string; rainfall: string; commonWeather: string[] };
   };
   specialBonuses: { [key: string]: number };
+}
+
+interface RandomEvent {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  type: 'weather' | 'market' | 'visitor' | 'news';
+  probability: number; // 発生確率 (0-1)
+  effects: {
+    money?: number;
+    reputation?: number;
+    wineValue?: number; // ワイン価値の変動率 (1.0 = 変動なし)
+    plotDamage?: number; // プロットへのダメージ
+    plotCount?: number; // 影響するプロット数
+    duration?: number; // 効果持続日数
+  };
+  season?: string; // 特定の季節でのみ発生 (オプション)
+  oneTimeOnly?: boolean; // 一回限りのイベント
+  condition?: (gameState: any) => boolean; // 発生条件
+}
+
+interface ActiveEvent {
+  eventId: string;
+  startDay: number;
+  remainingDays: number;
+  effects: RandomEvent['effects'];
 }
 
 interface SimpleVineyardGameProps {
@@ -300,6 +349,264 @@ const AI_PLAYER_NAMES = [
   'フランソワ・デュボワ', 'マリア・ロッシ', '田中一郎', 'ハンス・ミュラー',
   'カルロス・サンチェス', 'エミリー・スミス', 'ピエール・マルタン', 'アンナ・ノヴァク',
   'ジョン・ウィルソン', 'ルチア・フェラーリ', 'ケンジ・サトウ', 'ミゲル・ガルシア'
+];
+
+// スタッフ定義
+const AVAILABLE_STAFF: Staff[] = [
+  {
+    id: 'vineyard_assistant',
+    name: '畑作業アシスタント',
+    emoji: '👨‍🌾',
+    description: '水やりと施肥を自動で行います',
+    hiringCost: 2000,
+    monthlySalary: 500,
+    specialties: ['水やり', '施肥'],
+    autoActions: ['watering', 'fertilizing'],
+    efficiency: 1.0,
+    experience: 0,
+    level: 1
+  },
+  {
+    id: 'harvest_specialist',
+    name: '収穫スペシャリスト',
+    emoji: '👩‍🌾',
+    description: '収穫可能なブドウを自動で収穫してワインを作ります',
+    hiringCost: 4000,
+    monthlySalary: 800,
+    specialties: ['収穫', 'ワイン製造'],
+    autoActions: ['harvesting'],
+    efficiency: 1.1,
+    experience: 0,
+    level: 1
+  },
+  {
+    id: 'plant_manager',
+    name: '植付マネージャー',
+    emoji: '🧑‍💼',
+    description: '空いた畑に自動でブドウを植えます',
+    hiringCost: 3000,
+    monthlySalary: 600,
+    specialties: ['植付', '畑管理'],
+    autoActions: ['planting'],
+    efficiency: 1.0,
+    experience: 0,
+    level: 1
+  },
+  {
+    id: 'disease_doctor',
+    name: '病気治療師',
+    emoji: '🩺',
+    description: '病気の早期発見と治療を行います',
+    hiringCost: 5000,
+    monthlySalary: 1000,
+    specialties: ['病気治療', '健康管理'],
+    autoActions: ['disease_treatment'],
+    efficiency: 1.2,
+    experience: 0,
+    level: 1
+  },
+  {
+    id: 'master_vintner',
+    name: 'マスターヴィントナー',
+    emoji: '🍷',
+    description: '高品質ワイン製造に特化した専門家',
+    hiringCost: 10000,
+    monthlySalary: 2000,
+    specialties: ['プレミアムワイン製造', '品質管理'],
+    autoActions: ['premium_winemaking'],
+    efficiency: 1.5,
+    experience: 0,
+    level: 1
+  }
+];
+
+// ランダムイベント設定
+const RANDOM_EVENTS: RandomEvent[] = [
+  // 天気関連イベント
+  {
+    id: 'perfect_weather',
+    name: '理想的な気候',
+    emoji: '🌅',
+    description: '完璧な天候が続き、ブドウの成長が促進されています',
+    type: 'weather',
+    probability: 0.02,
+    effects: {
+      plotCount: 999, // 全ての畑に影響
+      duration: 7
+    },
+    condition: (gameState) => gameState.currentSeasonIndex === 1 || gameState.currentSeasonIndex === 2 // 夏・秋
+  },
+  {
+    id: 'drought',
+    name: '干ばつ',
+    emoji: '🌵',
+    description: '深刻な干ばつで水の消費量が倍増しています',
+    type: 'weather',
+    probability: 0.015,
+    effects: {
+      duration: 14
+    },
+    condition: (gameState) => gameState.currentSeasonIndex === 1 // 夏
+  },
+  {
+    id: 'unexpected_rain',
+    name: '恵みの雨',
+    emoji: '🌦️',
+    description: '予期しない雨でブドウが潤い、水やりコストが削減されます',
+    type: 'weather',
+    probability: 0.02,
+    effects: {
+      duration: 5
+    }
+  },
+
+  // 市場関連イベント
+  {
+    id: 'wine_boom',
+    name: 'ワインブーム',
+    emoji: '📈',
+    description: 'ワインの需要が急激に高まり、価格が上昇しています',
+    type: 'market',
+    probability: 0.01,
+    effects: {
+      wineValue: 1.5,
+      duration: 21
+    }
+  },
+  {
+    id: 'market_crash',
+    name: '市場暴落',
+    emoji: '📉',
+    description: '経済不況でワインの価格が下落しています',
+    type: 'market',
+    probability: 0.008,
+    effects: {
+      wineValue: 0.6,
+      duration: 28
+    }
+  },
+  {
+    id: 'luxury_demand',
+    name: '高級品需要',
+    emoji: '💎',
+    description: '富裕層の高級ワイン需要が増加、品質の高いワインに高値がつきます',
+    type: 'market',
+    probability: 0.012,
+    effects: {
+      duration: 14
+    },
+    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 80)
+  },
+
+  // 来客関連イベント
+  {
+    id: 'wine_critic',
+    name: 'ワイン評論家の訪問',
+    emoji: '🍷',
+    description: '有名なワイン評論家があなたのワイナリーを訪問しました',
+    type: 'visitor',
+    probability: 0.005,
+    effects: {
+      money: 500,
+      reputation: 20
+    },
+    oneTimeOnly: true,
+    condition: (gameState) => gameState.wines.length >= 3 && gameState.day >= 60
+  },
+  {
+    id: 'tourist_group',
+    name: '観光客の団体',
+    emoji: '👥',
+    description: '観光客の団体がワイナリー見学に訪れ、お土産を購入していきました',
+    type: 'visitor',
+    probability: 0.015,
+    effects: {
+      money: 200
+    },
+    condition: (gameState) => gameState.wines.length >= 1
+  },
+  {
+    id: 'celebrity_endorsement',
+    name: 'セレブの推薦',
+    emoji: '⭐',
+    description: '有名人があなたのワインを絶賛！知名度が大幅に向上しました',
+    type: 'visitor',
+    probability: 0.002,
+    effects: {
+      money: 1000,
+      wineValue: 1.3,
+      duration: 30
+    },
+    oneTimeOnly: true,
+    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 90) && gameState.day >= 100
+  },
+
+  // ニュース関連イベント
+  {
+    id: 'wine_competition_win',
+    name: '国際コンクール入賞',
+    emoji: '🏆',
+    description: 'あなたのワインが国際コンクールで入賞し、大きな話題となりました',
+    type: 'news',
+    probability: 0.003,
+    effects: {
+      money: 800,
+      wineValue: 1.4,
+      duration: 45
+    },
+    oneTimeOnly: true,
+    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 85)
+  },
+  {
+    id: 'government_subsidy',
+    name: '政府補助金',
+    emoji: '🏛️',
+    description: '農業振興政策により、補助金が支給されました',
+    type: 'news',
+    probability: 0.008,
+    effects: {
+      money: 300
+    },
+    condition: (gameState) => gameState.day >= 30
+  },
+  {
+    id: 'new_trade_deal',
+    name: '貿易協定',
+    emoji: '🤝',
+    description: '新しい貿易協定により、ワイン輸出の機会が拡大しました',
+    type: 'news',
+    probability: 0.006,
+    effects: {
+      wineValue: 1.2,
+      duration: 60
+    },
+    condition: (gameState) => gameState.wines.length >= 5
+  },
+
+  // 災害・困難なイベント
+  {
+    id: 'equipment_failure',
+    name: '機械故障',
+    emoji: '⚙️',
+    description: 'ワイン製造設備が故障し、修理費用が発生しました',
+    type: 'news',
+    probability: 0.01,
+    effects: {
+      money: -400
+    }
+  },
+  {
+    id: 'labor_shortage',
+    name: '人手不足',
+    emoji: '👥',
+    description: '季節労働者の確保が困難になり、作業効率が低下しています',
+    type: 'news',
+    probability: 0.012,
+    effects: {
+      duration: 14
+    },
+    season: 'autumn'
+  }
 ];
 
 const GAME_GOALS = [
@@ -536,6 +843,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [showCompetitions, setShowCompetitions] = useState(false);
   const [competitionResults, setCompetitionResults] = useState<string | null>(null);
   const [showRegionMigration, setShowRegionMigration] = useState(false);
+  const [hiredStaff, setHiredStaff] = useState<HiredStaff[]>([]);
+  const [showStaffPanel, setShowStaffPanel] = useState(false);
   const [goals, setGoals] = useState<GameGoal[]>(GAME_GOALS);
   const [totalHarvested, setTotalHarvested] = useState(0);
   const [gameWon, setGameWon] = useState(false);
@@ -564,12 +873,104 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   // 畑拡張システム
   const [unlockedPlots, setUnlockedPlots] = useState(4); // 最初は4つの畑から開始
 
+  // ランダムイベントシステム
+  const [activeEvents, setActiveEvents] = useState<ActiveEvent[]>([]);
+  const [triggeredOneTimeEvents, setTriggeredOneTimeEvents] = useState<string[]>([]);
+  const [currentEvent, setCurrentEvent] = useState<RandomEvent | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventHistory, setEventHistory] = useState<(RandomEvent & { day: number })[]>([]);
+  const [showEventHistory, setShowEventHistory] = useState(false);
+
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
   }, []);
 
+  // ランダムイベント処理関数
+  const checkRandomEvents = useCallback(() => {
+    const gameState = {
+      day,
+      money,
+      wines,
+      plots,
+      currentSeasonIndex,
+      currentSeason
+    };
+
+    for (const event of RANDOM_EVENTS) {
+      // 一回限りのイベントで既に発生済みの場合はスキップ
+      if (event.oneTimeOnly && triggeredOneTimeEvents.includes(event.id)) {
+        continue;
+      }
+
+      // 季節条件チェック
+      if (event.season && event.season !== currentSeason.name) {
+        continue;
+      }
+
+      // カスタム条件チェック
+      if (event.condition && !event.condition(gameState)) {
+        continue;
+      }
+
+      // 確率判定
+      if (Math.random() < event.probability) {
+        triggerEvent(event);
+        break; // 1日に1つのイベントまで
+      }
+    }
+  }, [day, money, wines, plots, currentSeasonIndex, currentSeason, triggeredOneTimeEvents]);
+
+  const triggerEvent = useCallback((event: RandomEvent) => {
+    setCurrentEvent(event);
+    setShowEventModal(true);
+
+    // イベント履歴に追加
+    setEventHistory(prev => [...prev, { ...event, day }]);
+
+    // 一回限りのイベントの場合、発生済みリストに追加
+    if (event.oneTimeOnly) {
+      setTriggeredOneTimeEvents(prev => [...prev, event.id]);
+    }
+
+    // 即座に効果を適用するタイプのイベント（お金の増減など）
+    if (event.effects.money) {
+      setMoney(prev => Math.max(0, prev + event.effects.money!));
+    }
+
+    // 持続効果があるイベントの場合、activeEventsに追加
+    if (event.effects.duration && event.effects.duration > 0) {
+      const activeEvent: ActiveEvent = {
+        eventId: event.id,
+        startDay: day,
+        remainingDays: event.effects.duration,
+        effects: event.effects
+      };
+      setActiveEvents(prev => [...prev, activeEvent]);
+    }
+
+    showToast(`${event.emoji} ${event.name}が発生しました！`);
+  }, [day, showToast]);
+
+  const processActiveEvents = useCallback(() => {
+    setActiveEvents(prev => {
+      return prev.map(event => ({
+        ...event,
+        remainingDays: event.remainingDays - 1
+      })).filter(event => event.remainingDays > 0);
+    });
+  }, []);
+
+  // アクティブイベントの効果を取得
+  const getActiveEventEffects = useCallback(() => {
+    return activeEvents.reduce((acc, event) => {
+      if (event.effects.wineValue) {
+        acc.wineValueMultiplier = (acc.wineValueMultiplier || 1.0) * event.effects.wineValue;
+      }
+      return acc;
+    }, {} as { wineValueMultiplier?: number });
+  }, [activeEvents]);
 
   // 気候マスターレベル計算関数
   const getClimateMasteryLevel = useCallback((experience: number) => {
@@ -1527,6 +1928,225 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setShowRegionMigration(false);
   }, [selectedRegion.id, getMigrationCost, money, plots, wines.length, showToast, getRegionalWeather, currentSeasonIndex, playSuccessSound]);
 
+  // スタッフ管理システム
+  const getStaffInfo = useCallback((staffId: string): Staff => {
+    return AVAILABLE_STAFF.find(s => s.id === staffId) || AVAILABLE_STAFF[0];
+  }, []);
+
+  const hireStaff = useCallback((staffId: string) => {
+    const staffInfo = getStaffInfo(staffId);
+    const isAlreadyHired = hiredStaff.some(s => s.staffId === staffId);
+
+    if (isAlreadyHired) {
+      showToast(`${staffInfo.name}は既に雇用済みです`);
+      return;
+    }
+
+    if (money < staffInfo.hiringCost) {
+      showToast(`雇用には${staffInfo.hiringCost}円必要です`);
+      return;
+    }
+
+    setMoney(prev => prev - staffInfo.hiringCost);
+    setHiredStaff(prev => [...prev, {
+      staffId: staffId,
+      hiredDay: day,
+      experience: 0,
+      level: 1,
+      lastSalaryPaid: day
+    }]);
+
+    showToast(`${staffInfo.emoji} ${staffInfo.name}を雇用しました！`);
+    playSuccessSound();
+  }, [hiredStaff, money, day, getStaffInfo, showToast, playSuccessSound]);
+
+  const fireStaff = useCallback((staffId: string) => {
+    const staffInfo = getStaffInfo(staffId);
+
+    const confirmed = window.confirm(`${staffInfo.name}を解雇しますか？\n※未払いの給与は発生しません`);
+    if (!confirmed) return;
+
+    setHiredStaff(prev => prev.filter(s => s.staffId !== staffId));
+    showToast(`${staffInfo.emoji} ${staffInfo.name}を解雇しました`);
+  }, [getStaffInfo, showToast]);
+
+  const payStaffSalaries = useCallback(() => {
+    if (hiredStaff.length === 0) return;
+
+    let totalSalary = 0;
+    let staffToPay: string[] = [];
+
+    hiredStaff.forEach(staff => {
+      const staffInfo = getStaffInfo(staff.staffId);
+      // 30日ごとに給与支払い
+      if (day - staff.lastSalaryPaid >= 30) {
+        totalSalary += staffInfo.monthlySalary;
+        staffToPay.push(staffInfo.name);
+      }
+    });
+
+    if (totalSalary === 0) return;
+
+    if (money < totalSalary) {
+      showToast(`⚠️ 給与不足！${totalSalary}円必要ですが${money}円しかありません。スタッフのモチベーションが下がります...`);
+      return;
+    }
+
+    setMoney(prev => prev - totalSalary);
+    setHiredStaff(prev => prev.map(staff => ({
+      ...staff,
+      lastSalaryPaid: day,
+      experience: Math.min(100, staff.experience + 5) // 給与支払い時に経験値アップ
+    })));
+
+    showToast(`💰 スタッフ給与支払い: ${totalSalary}円 (${staffToPay.length}名)`);
+  }, [hiredStaff, day, money, getStaffInfo, showToast]);
+
+  // スタッフの自動作業実行
+  const executeStaffActions = useCallback(() => {
+    if (hiredStaff.length === 0) return;
+
+    hiredStaff.forEach(hiredStaffMember => {
+      const staffInfo = getStaffInfo(hiredStaffMember.staffId);
+      const efficiency = staffInfo.efficiency * (1 + hiredStaffMember.level * 0.1); // レベル分効率アップ
+
+      staffInfo.autoActions.forEach(action => {
+        switch (action) {
+          case 'watering':
+            // 水不足の畑に自動で水やり
+            plots.filter(p => p.isPlanted && p.waterLevel < 30 && p.id <= unlockedPlots).forEach(plot => {
+              if (water >= 10) {
+                setWater(prev => Math.max(0, prev - 10));
+                setPlots(prev => prev.map(p =>
+                  p.id === plot.id
+                    ? { ...p, waterLevel: Math.min(100, p.waterLevel + (20 * efficiency)) }
+                    : p
+                ));
+              }
+            });
+            break;
+
+          case 'fertilizing':
+            // 肥料不足の畑に自動で施肥
+            plots.filter(p => p.isPlanted && p.fertilizer < 20 && p.id <= unlockedPlots).forEach(plot => {
+              if (fertilizer >= 5) {
+                setFertilizer(prev => Math.max(0, prev - 5));
+                setPlots(prev => prev.map(p =>
+                  p.id === plot.id
+                    ? { ...p, fertilizer: Math.min(100, p.fertilizer + (15 * efficiency)) }
+                    : p
+                ));
+              }
+            });
+            break;
+
+          case 'disease_treatment':
+            // 病気の畑を自動で治療
+            plots.filter(p => p.disease && p.id <= unlockedPlots).forEach(plot => {
+              const disease = DISEASES.find(d => d.id === plot.disease);
+              if (disease && money >= disease.treatmentCost) {
+                setMoney(prev => prev - disease.treatmentCost);
+                setPlots(prev => prev.map(p =>
+                  p.id === plot.id
+                    ? { ...p, disease: null, diseaseDay: 0, health: Math.min(100, p.health + (30 * efficiency)) }
+                    : p
+                ));
+              }
+            });
+            break;
+
+          case 'planting':
+            // 空いた畑に自動で植付
+            const emptyPlots = plots.filter(p => !p.isPlanted && p.id <= unlockedPlots);
+            if (emptyPlots.length > 0 && money >= selectedGrapeType.price) {
+              const plotToPlant = emptyPlots[0];
+              setMoney(prev => prev - selectedGrapeType.price);
+              setPlots(prev => prev.map(p =>
+                p.id === plotToPlant.id
+                  ? {
+                      ...p,
+                      isPlanted: true,
+                      grapeType: selectedGrapeType.id,
+                      plantedDay: day,
+                      plantedSeason: currentSeasonIndex,
+                      growth: 0
+                    }
+                  : p
+              ));
+            }
+            break;
+
+          case 'harvesting':
+            // 収穫可能なブドウを自動で収穫してワイン製造
+            plots.filter(p => p.isPlanted && p.growth >= 100 && p.canHarvest && p.id <= unlockedPlots).forEach(plot => {
+              if (currentSeason.harvestPossible) {
+                // harvestPlot関数を直接呼ばず、収穫処理を実行
+                const grapeType = REGIONAL_GRAPE_TYPES[selectedRegion.id as keyof RegionalGrapeTypes]?.find(g => g.id === plot.grapeType);
+                if (grapeType) {
+                  // 自動収穫・ワイン製造（簡略版）
+                  const plotTerroir = getTerroir(plot.terroir);
+                  let quality = Math.min(100,
+                    (plot.health * 0.4 +
+                    plot.growth * 0.3 +
+                    (plot.fertilizer > 70 ? 20 : plot.fertilizer * 0.2) +
+                    grapeType.qualityBonus * 10) * plotTerroir.qualityMultiplier * efficiency
+                  );
+
+                  const wine = {
+                    id: `wine_${Date.now()}_${plot.id}`,
+                    name: `${selectedRegion.name} ${grapeType.name}`,
+                    grapeType: grapeType.name,
+                    region: selectedRegion.name,
+                    quality: Math.floor(quality),
+                    age: 0,
+                    value: Math.floor(grapeType.price * quality / 50),
+                    productionDate: day,
+                    isSpecial: false
+                  };
+
+                  setWines(prev => [...prev, wine]);
+                  updateGoalProgress('wine_production', 1);
+                  updateGoalProgress('quality_wines', wine.quality);
+                  updateGoalProgress('master_quality', wine.quality);
+                  updateGoalProgress('harvest', 1);
+
+                  // プロットをリセット
+                  setPlots(prev => prev.map(p =>
+                    p.id === plot.id
+                      ? {
+                          ...p,
+                          isPlanted: false,
+                          grapeType: '',
+                          growth: 0,
+                          plantedDay: 0,
+                          plantedSeason: 0,
+                          canHarvest: false,
+                          waterLevel: 50,
+                          fertilizer: 30,
+                          health: 100,
+                          disease: null,
+                          diseaseDay: 0,
+                          lastDisaster: null,
+                          disasterDay: 0
+                        }
+                      : p
+                  ));
+                }
+              }
+            });
+            break;
+        }
+      });
+
+      // スタッフの経験値アップ（作業実行時）
+      setHiredStaff(prev => prev.map(s =>
+        s.staffId === hiredStaffMember.staffId
+          ? { ...s, experience: Math.min(100, s.experience + 1) }
+          : s
+      ));
+    });
+  }, [hiredStaff, getStaffInfo, plots, unlockedPlots, water, fertilizer, money, selectedGrapeType, day, currentSeasonIndex, currentSeason.harvestPossible]);
+
   // 最近完了したゴールのトラッキング（重複通知を防ぐ）
   const [recentlyCompletedGoals, setRecentlyCompletedGoals] = useState<Set<string>>(new Set());
 
@@ -1845,6 +2465,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setWater(prev => Math.min(100, prev + 2));
     setFertilizer(prev => Math.min(50, prev + 1));
 
+    // スタッフ自動作業実行
+    executeStaffActions();
+
+    // 給与支払いチェック
+    payStaffSalaries();
+
+    // ランダムイベント処理
+    checkRandomEvents();
+    processActiveEvents();
+
     // ゲームオーバーチェック
     checkGameOver();
 
@@ -1855,7 +2485,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     updateGoalProgress('winter_upgrades', vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality + vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique);
     updateGoalProgress('special_wines', wines.filter(w => w.isSpecial).length);
     updateGoalProgress('money', money);
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition, getTerroir]);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition, getTerroir, executeStaffActions, payStaffSalaries, checkRandomEvents, processActiveEvents]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -2015,13 +2645,22 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     if (!wine) return;
 
     const ageBonus = Math.floor(wine.age / 10) * 0.1; // 10日ごとに10%ボーナス
-    const finalValue = Math.floor(wine.value * (1 + ageBonus));
+    const eventEffects = getActiveEventEffects();
+    const eventMultiplier = eventEffects.wineValueMultiplier || 1.0;
+
+    const finalValue = Math.floor(wine.value * (1 + ageBonus) * eventMultiplier);
 
     setMoney(prev => prev + finalValue);
     setWines(prev => prev.filter(w => w.id !== wineId));
 
-    showToast(`🍷 「${wine.name}」を${finalValue}円で売却しました！`);
-  }, [wines, gameOver, gameWon, showToast]);
+    if (eventMultiplier > 1.0) {
+      showToast(`🍷✨ 「${wine.name}」を${finalValue}円で売却！（市場効果+${Math.round((eventMultiplier - 1) * 100)}%）`);
+    } else if (eventMultiplier < 1.0) {
+      showToast(`🍷💧 「${wine.name}」を${finalValue}円で売却（市場効果${Math.round((eventMultiplier - 1) * 100)}%）`);
+    } else {
+      showToast(`🍷 「${wine.name}」を${finalValue}円で売却しました！`);
+    }
+  }, [wines, gameOver, gameWon, showToast, getActiveEventEffects]);
 
   // 一括水やり
   const waterAllPlots = useCallback(() => {
@@ -2427,6 +3066,24 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               🌍 地域移住
             </button>
             {day < 30 && <small className="migration-note">30日経過後に解禁</small>}
+          </div>
+
+          {/* スタッフ管理ボタン */}
+          <div className="staff-section">
+            <button
+              onClick={() => setShowStaffPanel(true)}
+              className="staff-btn"
+              title="スタッフを雇用して作業を自動化"
+            >
+              👥 スタッフ管理 {hiredStaff.length > 0 && `(${hiredStaff.length}名)`}
+            </button>
+            <button
+              onClick={() => setShowEventHistory(true)}
+              className="event-history-btn"
+              title="発生したイベントの履歴を確認"
+            >
+              📰 イベント履歴 {eventHistory.length > 0 && `(${eventHistory.length})`}
+            </button>
           </div>
         </div>
       </div>
@@ -2989,6 +3646,137 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         </div>
 
 
+        {/* スタッフ管理パネル */}
+        {showStaffPanel && (
+          <div className="staff-overlay">
+            <div className="staff-modal">
+              <div className="staff-header">
+                <h3>👥 スタッフ管理</h3>
+                <button
+                  onClick={() => setShowStaffPanel(false)}
+                  className="close-btn"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="staff-content">
+                {/* 雇用済みスタッフ */}
+                {hiredStaff.length > 0 && (
+                  <div className="hired-staff-section">
+                    <h4>💼 雇用中のスタッフ ({hiredStaff.length}名)</h4>
+                    <div className="hired-staff-list">
+                      {hiredStaff.map(staff => {
+                        const staffInfo = getStaffInfo(staff.staffId);
+                        const daysSinceHired = day - staff.hiredDay;
+                        const daysSinceLastPay = day - staff.lastSalaryPaid;
+                        const needsSalary = daysSinceLastPay >= 30;
+
+                        return (
+                          <div key={staff.staffId} className={`hired-staff-item ${needsSalary ? 'needs-salary' : ''}`}>
+                            <div className="staff-info">
+                              <div className="staff-name">
+                                {staffInfo.emoji} {staffInfo.name}
+                              </div>
+                              <div className="staff-details">
+                                <small>
+                                  雇用: {daysSinceHired}日前 | 経験値: {staff.experience}/100 | Lv.{staff.level}
+                                </small>
+                              </div>
+                              <div className="staff-specialties">
+                                専門: {staffInfo.specialties.join(', ')}
+                              </div>
+                              {needsSalary && (
+                                <div className="salary-warning">
+                                  ⚠️ 給与支払い必要: {staffInfo.monthlySalary}円
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => fireStaff(staff.staffId)}
+                              className="fire-btn"
+                            >
+                              解雇
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 雇用可能スタッフ */}
+                <div className="available-staff-section">
+                  <h4>🔍 雇用可能スタッフ</h4>
+                  <div className="available-staff-list">
+                    {AVAILABLE_STAFF.map(staff => {
+                      const isHired = hiredStaff.some(s => s.staffId === staff.id);
+
+                      return (
+                        <div key={staff.id} className={`available-staff-item ${isHired ? 'already-hired' : ''}`}>
+                          <div className="staff-card">
+                            <div className="staff-header">
+                              <h5>{staff.emoji} {staff.name}</h5>
+                              <div className="staff-cost">
+                                雇用費: {staff.hiringCost}円 | 月給: {staff.monthlySalary}円
+                              </div>
+                            </div>
+                            <p className="staff-description">{staff.description}</p>
+                            <div className="staff-specialties">
+                              <strong>専門分野:</strong> {staff.specialties.join(', ')}
+                            </div>
+                            <div className="staff-efficiency">
+                              <strong>効率:</strong> {Math.round(staff.efficiency * 100)}%
+                            </div>
+                            <div className="auto-actions">
+                              <strong>自動実行:</strong>
+                              <ul>
+                                {staff.autoActions.map(action => (
+                                  <li key={action}>
+                                    {(() => {
+                                      switch(action) {
+                                        case 'watering': return '💧 水やり（水分30%未満の畑）';
+                                        case 'fertilizing': return '🌱 施肥（肥料20%未満の畑）';
+                                        case 'harvesting': return '🍇 収穫（収穫可能なブドウ）';
+                                        case 'planting': return '🌱 植付（空いている畑）';
+                                        case 'disease_treatment': return '💊 病気治療（病気の畑）';
+                                        case 'premium_winemaking': return '🍷 高品質ワイン製造';
+                                        default: return action;
+                                      }
+                                    })()}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <button
+                              onClick={() => hireStaff(staff.id)}
+                              className="hire-btn"
+                              disabled={isHired || money < staff.hiringCost}
+                            >
+                              {isHired ? '雇用済み' : money >= staff.hiringCost ? '雇用する' : '資金不足'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* スタッフ管理情報 */}
+                <div className="staff-info-section">
+                  <h4>ℹ️ スタッフ管理について</h4>
+                  <ul>
+                    <li>スタッフは30日ごとに給与支払いが必要です</li>
+                    <li>給与未払いだと作業効率が低下します</li>
+                    <li>スタッフは経験を積むとレベルアップし、効率が向上します</li>
+                    <li>自動作業は毎日実行されます</li>
+                    <li>スタッフの専門分野に応じて作業内容が異なります</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 地域移住モーダル */}
         {showRegionMigration && (
           <div className="migration-overlay">
@@ -3083,6 +3871,121 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   閉じる
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ランダムイベントモーダル */}
+        {showEventModal && currentEvent && (
+          <div className="event-overlay">
+            <div className="event-modal">
+              <div className="event-header">
+                <h3>{currentEvent.emoji} {currentEvent.name}</h3>
+                <div className="event-type-badge">{currentEvent.type}</div>
+              </div>
+              <div className="event-content">
+                <p className="event-description">{currentEvent.description}</p>
+
+                {/* 効果の表示 */}
+                <div className="event-effects">
+                  {currentEvent.effects.money && (
+                    <div className={`effect-item ${currentEvent.effects.money > 0 ? 'positive' : 'negative'}`}>
+                      💰 {currentEvent.effects.money > 0 ? '+' : ''}{currentEvent.effects.money}円
+                    </div>
+                  )}
+                  {currentEvent.effects.wineValue && currentEvent.effects.wineValue !== 1.0 && (
+                    <div className={`effect-item ${currentEvent.effects.wineValue > 1.0 ? 'positive' : 'negative'}`}>
+                      🍷 ワイン価値 {Math.round((currentEvent.effects.wineValue - 1) * 100)}%
+                      {currentEvent.effects.duration && ` (${currentEvent.effects.duration}日間)`}
+                    </div>
+                  )}
+                  {currentEvent.effects.plotDamage && (
+                    <div className="effect-item negative">
+                      🌱 畑への影響 -{currentEvent.effects.plotDamage}%
+                    </div>
+                  )}
+                  {currentEvent.effects.duration && !currentEvent.effects.wineValue && (
+                    <div className="effect-item">
+                      ⏰ {currentEvent.effects.duration}日間継続
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEventModal(false)}
+                className="event-close-btn"
+              >
+                了解
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* イベント履歴モーダル */}
+        {showEventHistory && (
+          <div className="event-history-overlay">
+            <div className="event-history-modal">
+              <div className="event-history-header">
+                <h3>📰 イベント履歴</h3>
+                <button
+                  onClick={() => setShowEventHistory(false)}
+                  className="close-btn"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="event-history-content">
+                {eventHistory.length === 0 ? (
+                  <div className="no-events">
+                    <p>まだイベントが発生していません</p>
+                    <small>ゲームを進めると様々なイベントが発生します！</small>
+                  </div>
+                ) : (
+                  <div className="event-history-list">
+                    {eventHistory
+                      .slice()
+                      .reverse()
+                      .map((event, index) => (
+                        <div key={index} className="history-event-item">
+                          <div className="event-day">Day {event.day}</div>
+                          <div className="event-info">
+                            <div className="event-name">
+                              {event.emoji} {event.name}
+                            </div>
+                            <div className="event-type-small">{event.type}</div>
+                            <div className="event-desc">{event.description}</div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* アクティブイベント表示 */}
+        {activeEvents.length > 0 && (
+          <div className="active-events-panel">
+            <div className="active-events-header">
+              <h4>📅 進行中のイベント</h4>
+            </div>
+            <div className="active-events-list">
+              {activeEvents.map(activeEvent => {
+                const eventData = RANDOM_EVENTS.find(e => e.id === activeEvent.eventId);
+                if (!eventData) return null;
+
+                return (
+                  <div key={activeEvent.eventId} className="active-event-item">
+                    <div className="event-name">
+                      {eventData.emoji} {eventData.name}
+                    </div>
+                    <div className="event-remaining">
+                      残り{activeEvent.remainingDays}日
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
