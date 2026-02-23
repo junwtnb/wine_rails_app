@@ -60,6 +60,31 @@ interface Wine {
   isSpecial?: boolean; // 特別ワインかどうか
   specialType?: string; // 特別ワインの種類
   masteryBonus?: number; // マスタリーボーナス
+  agingPotential: number; // 熟成ポテンシャル (0-100)
+  peakAge: number; // ピーク品質になる年数
+  storedInCellar: boolean; // セラー保管中
+  cellarSlotId?: string; // セラーのスロットID
+}
+
+interface WineCellar {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  capacity: number; // 収容可能なワイン数
+  temperature: number; // 保管温度（℃）
+  humidity: number; // 湿度（%）
+  agingEfficiency: number; // 熟成効率倍率
+  maintenanceCost: number; // 月額維持費
+  purchaseCost: number; // 購入費用
+}
+
+interface CellarSlot {
+  id: string;
+  wineId: string | null;
+  storedDay: number; // 保管開始日
+  temperature: number; // 保管温度
+  humidity: number; // 湿度
 }
 
 interface GameGoal {
@@ -173,6 +198,42 @@ interface ActiveEvent {
   startDay: number;
   remainingDays: number;
   effects: RandomEvent['effects'];
+}
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  category: 'production' | 'quality' | 'economic' | 'exploration' | 'special' | 'mastery';
+  tier: 'bronze' | 'silver' | 'gold' | 'diamond' | 'legendary';
+  requirements: {
+    type: string;
+    target: number;
+    condition?: (gameState: any) => boolean;
+  }[];
+  reward: {
+    money?: number;
+    title?: string;
+    unlocks?: string[];
+  };
+  isSecret?: boolean;
+  unlockedAt?: number;
+}
+
+interface PlayerTitle {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  requirement: string;
+}
+
+interface AchievementProgress {
+  achievementId: string;
+  progress: { [requirementType: string]: number };
+  completed: boolean;
+  unlockedDay: number | null;
 }
 
 interface SimpleVineyardGameProps {
@@ -609,6 +670,197 @@ const RANDOM_EVENTS: RandomEvent[] = [
   }
 ];
 
+// 実績システム
+const ACHIEVEMENTS: Achievement[] = [
+  // 生産系実績 (Production)
+  {
+    id: 'first_wine',
+    name: 'ワイン醸造初心者',
+    description: '初めてのワインを醸造する',
+    emoji: '🍷',
+    category: 'production',
+    tier: 'bronze',
+    requirements: [{ type: 'wines_produced', target: 1 }],
+    reward: { money: 100, title: 'apprentice_winemaker' }
+  },
+  {
+    id: 'wine_master',
+    name: 'ワイン醸造マスター',
+    description: 'ワインを100本醸造する',
+    emoji: '🏆',
+    category: 'production',
+    tier: 'gold',
+    requirements: [{ type: 'wines_produced', target: 100 }],
+    reward: { money: 2000, title: 'master_winemaker' }
+  },
+  {
+    id: 'mass_producer',
+    name: '大量生産者',
+    description: '1日で5本以上のワインを生産する',
+    emoji: '🏭',
+    category: 'production',
+    tier: 'silver',
+    requirements: [{ type: 'daily_wine_production', target: 5 }],
+    reward: { money: 500, title: 'industrial_producer' }
+  },
+
+  // 品質系実績 (Quality)
+  {
+    id: 'quality_wine',
+    name: '品質追求者',
+    description: '品質90以上のワインを作る',
+    emoji: '⭐',
+    category: 'quality',
+    tier: 'silver',
+    requirements: [{ type: 'max_wine_quality', target: 90 }],
+    reward: { money: 800, title: 'quality_craftsman' }
+  },
+  {
+    id: 'perfect_wine',
+    name: '完璧主義者',
+    description: '品質100の完璧なワインを作る',
+    emoji: '💎',
+    category: 'quality',
+    tier: 'diamond',
+    requirements: [{ type: 'max_wine_quality', target: 100 }],
+    reward: { money: 3000, title: 'perfectionist' }
+  },
+  {
+    id: 'consistent_quality',
+    name: '品質安定マスター',
+    description: '品質80以上のワインを連続10本作る',
+    emoji: '📊',
+    category: 'quality',
+    tier: 'gold',
+    requirements: [{ type: 'consecutive_quality_wines', target: 10 }],
+    reward: { money: 1500, title: 'quality_master' }
+  },
+
+  // 経済系実績 (Economic)
+  {
+    id: 'first_millionaire',
+    name: '初代大富豪',
+    description: '1万円を貯める',
+    emoji: '💰',
+    category: 'economic',
+    tier: 'silver',
+    requirements: [{ type: 'max_money', target: 10000 }],
+    reward: { money: 1000, title: 'wealthy_vintner' }
+  },
+  {
+    id: 'wine_mogul',
+    name: 'ワイン大富豪',
+    description: '10万円を貯める',
+    emoji: '🏛️',
+    category: 'economic',
+    tier: 'diamond',
+    requirements: [{ type: 'max_money', target: 100000 }],
+    reward: { money: 10000, title: 'wine_mogul' }
+  },
+  {
+    id: 'big_spender',
+    name: '散財王',
+    description: '累計で5万円を支出する',
+    emoji: '💸',
+    category: 'economic',
+    tier: 'gold',
+    requirements: [{ type: 'total_spent', target: 50000 }],
+    reward: { money: 2000, title: 'big_spender' }
+  },
+
+  // 探索系実績 (Exploration)
+  {
+    id: 'world_traveler',
+    name: '世界の旅人',
+    description: '全ての地域を訪問する',
+    emoji: '🌍',
+    category: 'exploration',
+    tier: 'gold',
+    requirements: [{ type: 'regions_visited', target: 4 }],
+    reward: { money: 2000, title: 'world_explorer' }
+  },
+  {
+    id: 'climate_researcher',
+    name: '気候研究者',
+    description: '3つの気候区分でマスタリーレベル3に到達',
+    emoji: '🌡️',
+    category: 'exploration',
+    tier: 'diamond',
+    requirements: [{ type: 'climate_mastery_level_3', target: 3 }],
+    reward: { money: 5000, title: 'climate_scientist' }
+  },
+
+  // 特殊実績 (Special)
+  {
+    id: 'disaster_survivor',
+    name: '災害サバイバー',
+    description: '10回の災害を乗り越える',
+    emoji: '🛡️',
+    category: 'special',
+    tier: 'silver',
+    requirements: [{ type: 'disasters_survived', target: 10 }],
+    reward: { money: 1000, title: 'survivor' }
+  },
+  {
+    id: 'lucky_player',
+    name: 'ラッキープレイヤー',
+    description: 'セレブの推薦イベントを経験する',
+    emoji: '🍀',
+    category: 'special',
+    tier: 'gold',
+    requirements: [{ type: 'celebrity_endorsement', target: 1 }],
+    reward: { money: 2000, title: 'celebrity_favorite' },
+    isSecret: true
+  },
+
+  // マスタリー系実績 (Mastery)
+  {
+    id: 'time_master',
+    name: 'タイムマスター',
+    description: '1年間（120日）生き延びる',
+    emoji: '⏳',
+    category: 'mastery',
+    tier: 'silver',
+    requirements: [{ type: 'days_survived', target: 120 }],
+    reward: { money: 1000, title: 'time_keeper' }
+  },
+  {
+    id: 'legendary_vintner',
+    name: '伝説のワイン醸造家',
+    description: '全ての基本実績を達成する',
+    emoji: '👑',
+    category: 'mastery',
+    tier: 'legendary',
+    requirements: [
+      { type: 'wines_produced', target: 50 },
+      { type: 'max_wine_quality', target: 95 },
+      { type: 'max_money', target: 50000 },
+      { type: 'days_survived', target: 200 }
+    ],
+    reward: { money: 10000, title: 'legendary_master' },
+    isSecret: true
+  }
+];
+
+// プレイヤータイトル
+const PLAYER_TITLES: PlayerTitle[] = [
+  { id: 'apprentice_winemaker', name: 'ワイン醸造見習い', description: '初めてワインを作った証', emoji: '🍇', requirement: '初ワイン醸造' },
+  { id: 'master_winemaker', name: 'ワイン醸造マスター', description: '100本のワインを醸造した実力者', emoji: '🏆', requirement: 'ワイン100本醸造' },
+  { id: 'industrial_producer', name: '工業生産者', description: '効率的な大量生産を実現', emoji: '🏭', requirement: '1日5本生産' },
+  { id: 'quality_craftsman', name: '品質職人', description: '高品質ワインへの情熱', emoji: '⭐', requirement: '品質90達成' },
+  { id: 'perfectionist', name: '完璧主義者', description: '完璧なワインを追求する者', emoji: '💎', requirement: '品質100達成' },
+  { id: 'quality_master', name: '品質マスター', description: '安定した高品質を維持', emoji: '📊', requirement: '連続高品質' },
+  { id: 'wealthy_vintner', name: '富裕ワイン醸造家', description: '成功を収めたワイン醸造家', emoji: '💰', requirement: '1万円達成' },
+  { id: 'wine_mogul', name: 'ワイン大富豪', description: '業界を牛耳る大富豪', emoji: '🏛️', requirement: '10万円達成' },
+  { id: 'big_spender', name: '散財王', description: '投資を惜しまない経営者', emoji: '💸', requirement: '5万円支出' },
+  { id: 'world_explorer', name: '世界探検家', description: '世界各地を巡った冒険者', emoji: '🌍', requirement: '全地域訪問' },
+  { id: 'climate_scientist', name: '気候科学者', description: '気候を深く理解する研究者', emoji: '🌡️', requirement: '気候マスタリー' },
+  { id: 'survivor', name: 'サバイバー', description: '数々の困難を乗り越えた強者', emoji: '🛡️', requirement: '災害10回克服' },
+  { id: 'celebrity_favorite', name: 'セレブのお気に入り', description: '有名人も認める醸造家', emoji: '🍀', requirement: 'セレブ推薦' },
+  { id: 'time_keeper', name: 'タイムキーパー', description: '時の流れを制する者', emoji: '⏳', requirement: '1年生存' },
+  { id: 'legendary_master', name: '伝説のマスター', description: '全てを極めた真のマスター', emoji: '👑', requirement: '全実績達成' }
+];
+
 const GAME_GOALS = [
   // 初級ミッション
   { id: 'first_harvest', title: '初回収穫', description: 'ブドウを1本収穫する', target: 1, current: 0, completed: false, reward: 200, type: 'harvest' as const },
@@ -716,29 +968,83 @@ interface GrapeType {
   price: number;
   waterNeeds: number;
   qualityBonus: number;
+  agingPotential: number; // 熟成ポテンシャル (0-100)
+  peakAge: number; // ピーク品質になる年数
 }
 
 type RegionalGrapeTypes = {
   [K in WineRegion['id']]: GrapeType[];
 };
 
+// ワインセラーの定義
+const WINE_CELLARS: WineCellar[] = [
+  {
+    id: 'basic_cellar',
+    name: '基本セラー',
+    emoji: '🏠',
+    description: '温度・湿度管理のある小さなセラー',
+    capacity: 10,
+    temperature: 12,
+    humidity: 70,
+    agingEfficiency: 1.0,
+    maintenanceCost: 500,
+    purchaseCost: 5000
+  },
+  {
+    id: 'cave_cellar',
+    name: '地下洞窟セラー',
+    emoji: '⛰️',
+    description: '自然の地下洞窟を利用した理想的な環境',
+    capacity: 25,
+    temperature: 10,
+    humidity: 75,
+    agingEfficiency: 1.3,
+    maintenanceCost: 800,
+    purchaseCost: 15000
+  },
+  {
+    id: 'premium_cellar',
+    name: 'プレミアムセラー',
+    emoji: '🏛️',
+    description: '最高級の温度・湿度制御システム',
+    capacity: 50,
+    temperature: 11,
+    humidity: 73,
+    agingEfficiency: 1.5,
+    maintenanceCost: 1500,
+    purchaseCost: 30000
+  },
+  {
+    id: 'underground_vault',
+    name: '地下貯蔵庫',
+    emoji: '🏰',
+    description: 'プロ仕様の大型地下貯蔵施設',
+    capacity: 100,
+    temperature: 10,
+    humidity: 75,
+    agingEfficiency: 1.7,
+    maintenanceCost: 3000,
+    purchaseCost: 60000
+  }
+];
+
 const REGIONAL_GRAPE_TYPES: RegionalGrapeTypes = {
   bordeaux: [
-    { id: 'cabernet_sauvignon', name: 'カベルネ・ソーヴィニヨン', emoji: '🍇', price: 150, waterNeeds: 2, qualityBonus: 1.3 },
-    { id: 'merlot', name: 'メルロー', emoji: '🍇', price: 130, waterNeeds: 2.5, qualityBonus: 1.2 },
-    { id: 'sauvignon_blanc', name: 'ソーヴィニヨン・ブラン', emoji: '🤍', price: 110, waterNeeds: 1.8, qualityBonus: 1.1 }
+    { id: 'cabernet_sauvignon', name: 'カベルネ・ソーヴィニヨン', emoji: '🍇', price: 150, waterNeeds: 2, qualityBonus: 1.3, agingPotential: 85, peakAge: 8 },
+    { id: 'merlot', name: 'メルロー', emoji: '🍇', price: 130, waterNeeds: 2.5, qualityBonus: 1.2, agingPotential: 75, peakAge: 5 },
+    { id: 'sauvignon_blanc', name: 'ソーヴィニヨン・ブラン', emoji: '🤍', price: 110, waterNeeds: 1.8, qualityBonus: 1.1, agingPotential: 45, peakAge: 2 }
   ],
   burgundy: [
-    { id: 'pinot_noir', name: 'ピノ・ノワール', emoji: '🍇', price: 200, waterNeeds: 1.5, qualityBonus: 1.5 },
-    { id: 'chardonnay', name: 'シャルドネ', emoji: '🤍', price: 120, waterNeeds: 1.8, qualityBonus: 1.3 }
+    { id: 'pinot_noir', name: 'ピノ・ノワール', emoji: '🍇', price: 200, waterNeeds: 1.5, qualityBonus: 1.5, agingPotential: 90, peakAge: 10 },
+    { id: 'chardonnay', name: 'シャルドネ', emoji: '🤍', price: 120, waterNeeds: 1.8, qualityBonus: 1.3, agingPotential: 70, peakAge: 5 }
   ],
   champagne: [
-    { id: 'chardonnay_champagne', name: 'シャルドネ（シャンパーニュ）', emoji: '✨', price: 180, waterNeeds: 1.2, qualityBonus: 1.4 },
-    { id: 'pinot_noir_champagne', name: 'ピノ・ノワール（シャンパーニュ）', emoji: '✨', price: 190, waterNeeds: 1.3, qualityBonus: 1.4 }
+    { id: 'chardonnay_champagne', name: 'シャルドネ（シャンパーニュ）', emoji: '✨', price: 180, waterNeeds: 1.2, qualityBonus: 1.4, agingPotential: 80, peakAge: 7 },
+    { id: 'pinot_noir_champagne', name: 'ピノ・ノワール（シャンパーニュ）', emoji: '✨', price: 190, waterNeeds: 1.3, qualityBonus: 1.4, agingPotential: 85, peakAge: 8 }
   ],
   napa: [
-    { id: 'napa_cabernet', name: 'ナパ カベルネ', emoji: '🍇', price: 170, waterNeeds: 1.0, qualityBonus: 1.4 },
-    { id: 'napa_chardonnay', name: 'ナパ シャルドネ', emoji: '🤍', price: 140, waterNeeds: 1.2, qualityBonus: 1.2 }
+    { id: 'napa_cabernet', name: 'ナパ カベルネ', emoji: '🍇', price: 170, waterNeeds: 1.0, qualityBonus: 1.4, agingPotential: 88, peakAge: 12 },
+    { id: 'napa_chardonnay', name: 'ナパ シャルドネ', emoji: '🤍', price: 140, waterNeeds: 1.2, qualityBonus: 1.2, agingPotential: 65, peakAge: 4 }
   ]
 };
 
@@ -839,6 +1145,9 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
   const [gamePhase, setGamePhase] = useState<'setup' | 'region_selection' | 'planting' | 'growing'>('setup');
   const [wines, setWines] = useState<Wine[]>([]);
+  const [ownedCellars, setOwnedCellars] = useState<string[]>([]);
+  const [cellarSlots, setCellarSlots] = useState<{ [cellarId: string]: CellarSlot[] }>({});
+  const [showCellarPanel, setShowCellarPanel] = useState(false);
   const [competitions, setCompetitions] = useState<Competition[]>(WINE_COMPETITIONS.map(c => ({ ...c })));
   const [showCompetitions, setShowCompetitions] = useState(false);
   const [competitionResults, setCompetitionResults] = useState<string | null>(null);
@@ -881,10 +1190,159 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [eventHistory, setEventHistory] = useState<(RandomEvent & { day: number })[]>([]);
   const [showEventHistory, setShowEventHistory] = useState(false);
 
+  // 実績システム
+  const [achievementProgress, setAchievementProgress] = useState<AchievementProgress[]>(() =>
+    ACHIEVEMENTS.map(achievement => ({
+      achievementId: achievement.id,
+      progress: achievement.requirements.reduce((acc, req) => ({ ...acc, [req.type]: 0 }), {}),
+      completed: false,
+      unlockedDay: null
+    }))
+  );
+  const [unlockedTitles, setUnlockedTitles] = useState<string[]>([]);
+  const [currentTitle, setCurrentTitle] = useState<string | null>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+
+  // ゲーム統計（実績追跡用）
+  const [gameStats, setGameStats] = useState({
+    totalWinesProduced: 0,
+    maxWineQuality: 0,
+    maxMoney: 0,
+    totalSpent: 0,
+    regionsVisited: new Set<string>(),
+    disastersSurvived: 0,
+    consecutiveQualityWines: 0,
+    dailyWineProduction: 0,
+    celebrityEndorsements: 0,
+    climateMasteryAchievements: new Set<string>()
+  });
+
   // トースト通知を表示する関数
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
+  }, []);
+
+  // 実績処理関数
+  const updateAchievementProgress = useCallback((type: string, value: number, additionalData?: any) => {
+    setAchievementProgress(prev => {
+      const updated = prev.map(progress => {
+        const achievement = ACHIEVEMENTS.find(a => a.id === progress.achievementId);
+        if (!achievement || progress.completed) return progress;
+
+        const relevantRequirements = achievement.requirements.filter(req => req.type === type);
+        if (relevantRequirements.length === 0) return progress;
+
+        const newProgress = { ...progress };
+        let shouldCheck = false;
+
+        for (const req of relevantRequirements) {
+          // 条件チェック
+          if (req.condition && !req.condition({ ...gameStats, ...additionalData })) continue;
+
+          // 累積型の統計を更新
+          if (['wines_produced', 'total_spent', 'disasters_survived'].includes(type)) {
+            newProgress.progress[type] = (newProgress.progress[type] || 0) + value;
+            shouldCheck = true;
+          }
+          // 最大値型の統計を更新
+          else if (['max_wine_quality', 'max_money'].includes(type)) {
+            if (value > (newProgress.progress[type] || 0)) {
+              newProgress.progress[type] = value;
+              shouldCheck = true;
+            }
+          }
+          // 連続型の統計を更新
+          else if (type === 'consecutive_quality_wines') {
+            if (additionalData?.reset) {
+              newProgress.progress[type] = 0;
+            } else if (value >= 80) {
+              newProgress.progress[type] = (newProgress.progress[type] || 0) + 1;
+              shouldCheck = true;
+            } else {
+              newProgress.progress[type] = 0;
+            }
+          }
+          // その他の統計を更新
+          else {
+            newProgress.progress[type] = value;
+            shouldCheck = true;
+          }
+        }
+
+        // 実績達成チェック
+        if (shouldCheck && !newProgress.completed) {
+          const allRequirementsMet = achievement.requirements.every(req => {
+            const currentValue = newProgress.progress[req.type] || 0;
+            return currentValue >= req.target;
+          });
+
+          if (allRequirementsMet) {
+            newProgress.completed = true;
+            newProgress.unlockedDay = day;
+
+            // 実績解除処理
+            setTimeout(() => unlockAchievement(achievement), 100);
+          }
+        }
+
+        return newProgress;
+      });
+
+      return updated;
+    });
+  }, [day, gameStats]);
+
+  const unlockAchievement = useCallback((achievement: Achievement) => {
+    // 報酬を付与
+    if (achievement.reward.money) {
+      setMoney(prev => prev + achievement.reward.money!);
+    }
+
+    // タイトルを解除
+    if (achievement.reward.title) {
+      setUnlockedTitles(prev => {
+        if (!prev.includes(achievement.reward.title!)) {
+          return [...prev, achievement.reward.title!];
+        }
+        return prev;
+      });
+    }
+
+    // 新実績として通知キューに追加
+    setNewAchievements(prev => [...prev, achievement]);
+
+    // 実績解除トースト
+    const tierEmoji = {
+      bronze: '🥉',
+      silver: '🥈',
+      gold: '🥇',
+      diamond: '💎',
+      legendary: '👑'
+    }[achievement.tier];
+
+    showToast(`${tierEmoji} 実績解除: ${achievement.name}！`);
+
+    // 報酬のトースト
+    if (achievement.reward.money) {
+      setTimeout(() => {
+        showToast(`💰 報酬: ${achievement.reward.money}円を獲得！`);
+      }, 1500);
+    }
+
+    if (achievement.reward.title) {
+      setTimeout(() => {
+        const title = PLAYER_TITLES.find(t => t.id === achievement.reward.title);
+        if (title) {
+          showToast(`🏷️ 新しいタイトル「${title.name}」を獲得！`);
+        }
+      }, 3000);
+    }
+  }, [showToast]);
+
+  const getTitleByName = useCallback((titleId: string): PlayerTitle | null => {
+    return PLAYER_TITLES.find(t => t.id === titleId) || null;
   }, []);
 
   // ランダムイベント処理関数
@@ -934,9 +1392,18 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       setTriggeredOneTimeEvents(prev => [...prev, event.id]);
     }
 
+    // 特別イベントの実績追跡
+    if (event.id === 'celebrity_endorsement') {
+      updateAchievementProgress('celebrity_endorsement', 1);
+      setGameStats(prev => ({ ...prev, celebrityEndorsements: prev.celebrityEndorsements + 1 }));
+    }
+
     // 即座に効果を適用するタイプのイベント（お金の増減など）
     if (event.effects.money) {
       setMoney(prev => Math.max(0, prev + event.effects.money!));
+      if (event.effects.money > 0) {
+        updateAchievementProgress('max_money', money + event.effects.money!);
+      }
     }
 
     // 持続効果があるイベントの場合、activeEventsに追加
@@ -2101,7 +2568,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                     age: 0,
                     value: Math.floor(grapeType.price * quality / 50),
                     productionDate: day,
-                    isSpecial: false
+                    isSpecial: false,
+                    agingPotential: grapeType.agingPotential,
+                    peakAge: grapeType.peakAge * 365, // 年数を日数に変換
+                    storedInCellar: false
                   };
 
                   setWines(prev => [...prev, wine]);
@@ -2485,7 +2955,25 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     updateGoalProgress('winter_upgrades', vineyardUpgrades.irrigationSystem + vineyardUpgrades.soilQuality + vineyardUpgrades.weatherProtection + vineyardUpgrades.pruningTechnique);
     updateGoalProgress('special_wines', wines.filter(w => w.isSpecial).length);
     updateGoalProgress('money', money);
-  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition, getTerroir, executeStaffActions, payStaffSalaries, checkRandomEvents, processActiveEvents]);
+
+    // 実績進捗の日次更新
+    updateAchievementProgress('days_survived', day);
+    updateAchievementProgress('max_money', money);
+    updateAchievementProgress('daily_wine_production', gameStats.dailyWineProduction);
+
+    // 地域訪問実績
+    setGameStats(prev => ({
+      ...prev,
+      regionsVisited: new Set([...Array.from(prev.regionsVisited), selectedRegion.id]),
+      dailyWineProduction: 0 // 日次生産数をリセット
+    }));
+
+    updateAchievementProgress('regions_visited', gameStats.regionsVisited.size + 1);
+
+    // 気候マスタリー実績チェック
+    const masteryLevel3Count = Object.values(regionExperience).filter(exp => getClimateMasteryLevel(exp) >= 3).length;
+    updateAchievementProgress('climate_mastery_level_3', masteryLevel3Count);
+  }, [currentWeather, currentSeason, selectedRegion, getRegionalWeather, day, currentSeasonIndex, gameOver, gameWon, getClimateMasteryLevel, getClimateMasteryInfo, showToast, getClimateWeatherExplanation, regionExperience, updateGoalProgress, unlockedPlots, vineyardUpgrades, wines, money, activateSeasonalCompetition, getTerroir, executeStaffActions, payStaffSalaries, checkRandomEvents, processActiveEvents, updateAchievementProgress, gameStats]);
 
   // 自動進行の開始/停止
   const toggleAutoAdvance = useCallback(() => {
@@ -2587,7 +3075,10 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
         productionDate: day,
         isSpecial,
         specialType,
-        masteryBonus
+        masteryBonus,
+        agingPotential: grapeType.agingPotential,
+        peakAge: grapeType.peakAge * 365, // 年数を日数に変換
+        storedInCellar: false
       };
 
       setWines(prev => [...prev, wine]);
@@ -2603,6 +3094,20 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       updateGoalProgress('wine_production', 1);
       updateGoalProgress('quality_wines', wine.quality); // 品質85以上のワイン用
       updateGoalProgress('master_quality', wine.quality); // 品質90以上のワイン用
+
+      // 実績進捗更新
+      updateAchievementProgress('wines_produced', 1);
+      updateAchievementProgress('max_wine_quality', wine.quality);
+      updateAchievementProgress('consecutive_quality_wines', wine.quality);
+
+      // ゲーム統計更新
+      setGameStats(prev => ({
+        ...prev,
+        totalWinesProduced: prev.totalWinesProduced + 1,
+        maxWineQuality: Math.max(prev.maxWineQuality, wine.quality),
+        dailyWineProduction: prev.dailyWineProduction + 1,
+        consecutiveQualityWines: wine.quality >= 80 ? prev.consecutiveQualityWines + 1 : 0
+      }));
     } else {
       // そのまま売却
       const harvestValue = Math.floor(grapeType.price * 0.8);
@@ -2635,7 +3140,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }
         : p
     ));
-  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound, showToast, canCreateSpecialWine, getSpecialWineInfo]);
+  }, [plots, currentSeason, selectedRegion, day, updateGoalProgress, gameOver, gameWon, playHarvestSound, showToast, canCreateSpecialWine, getSpecialWineInfo, updateAchievementProgress, money]);
 
   // ワインを売る関数
   const sellWine = useCallback((wineId: string) => {
@@ -2652,6 +3157,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     setMoney(prev => prev + finalValue);
     setWines(prev => prev.filter(w => w.id !== wineId));
+
+    // 実績進捗更新
+    updateAchievementProgress('max_money', money + finalValue);
+
+    // ゲーム統計更新
+    setGameStats(prev => ({
+      ...prev,
+      maxMoney: Math.max(prev.maxMoney, money + finalValue)
+    }));
 
     if (eventMultiplier > 1.0) {
       showToast(`🍷✨ 「${wine.name}」を${finalValue}円で売却！（市場効果+${Math.round((eventMultiplier - 1) * 100)}%）`);
@@ -2879,6 +3393,82 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     window.location.reload();
   }, []);
 
+  // ワインセラー管理関数
+  const purchaseCellar = useCallback((cellarId: string) => {
+    const cellar = WINE_CELLARS.find(c => c.id === cellarId);
+    if (!cellar || money < cellar.purchaseCost) return;
+
+    setMoney(prev => prev - cellar.purchaseCost);
+    setOwnedCellars(prev => [...prev, cellarId]);
+
+    // セラーのスロットを初期化
+    const slots: CellarSlot[] = Array.from({ length: cellar.capacity }, (_, index) => ({
+      id: `${cellarId}_slot_${index}`,
+      wineId: null,
+      storedDay: 0,
+      temperature: cellar.temperature,
+      humidity: cellar.humidity
+    }));
+
+    setCellarSlots(prev => ({ ...prev, [cellarId]: slots }));
+    showToast(`🏛️ ${cellar.name}を購入しました！容量: ${cellar.capacity}本`);
+  }, [money, showToast]);
+
+  const storeWineInCellar = useCallback((wineId: string, cellarId: string, slotId: string) => {
+    const wine = wines.find(w => w.id === wineId);
+    const cellar = WINE_CELLARS.find(c => c.id === cellarId);
+    const slots = cellarSlots[cellarId];
+    const slot = slots?.find(s => s.id === slotId);
+
+    if (!wine || !cellar || !slot || slot.wineId || wine.storedInCellar) return;
+
+    // ワインをセラーに保管
+    setWines(prev => prev.map(w =>
+      w.id === wineId
+        ? { ...w, storedInCellar: true, cellarSlotId: slotId }
+        : w
+    ));
+
+    // スロットを占有
+    setCellarSlots(prev => ({
+      ...prev,
+      [cellarId]: prev[cellarId].map(s =>
+        s.id === slotId
+          ? { ...s, wineId, storedDay: day }
+          : s
+      )
+    }));
+
+    showToast(`🍷 「${wine.name}」を${cellar.name}に保管しました`);
+  }, [wines, cellarSlots, day, showToast]);
+
+  const removeWineFromCellar = useCallback((wineId: string) => {
+    const wine = wines.find(w => w.id === wineId && w.storedInCellar);
+    if (!wine || !wine.cellarSlotId) return;
+
+    // ワインをセラーから取り出し
+    setWines(prev => prev.map(w =>
+      w.id === wineId
+        ? { ...w, storedInCellar: false, cellarSlotId: undefined }
+        : w
+    ));
+
+    // スロットを解放
+    setCellarSlots(prev => {
+      const newSlots = { ...prev };
+      Object.keys(newSlots).forEach(cellarId => {
+        newSlots[cellarId] = newSlots[cellarId].map(slot =>
+          slot.id === wine.cellarSlotId
+            ? { ...slot, wineId: null, storedDay: 0 }
+            : slot
+        );
+      });
+      return newSlots;
+    });
+
+    showToast(`🍷 「${wine.name}」をセラーから取り出しました`);
+  }, [wines, showToast]);
+
   // マネーゴールをチェック
   React.useEffect(() => {
     updateGoalProgress('money', money);
@@ -2889,13 +3479,59 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     checkGameWin();
   }, [checkGameWin]);
 
+  // ワイン熟成システム
+  const calculateAgedQuality = useCallback((wine: Wine, ageInDays: number): number => {
+    const ageInYears = ageInDays / 365;
+    const peakYears = wine.peakAge / 365;
+
+    // 基本品質からスタート
+    let agedQuality = wine.quality;
+
+    // セラー保管中の場合、効率的に熟成
+    let agingEfficiency = 1.0;
+    if (wine.storedInCellar && wine.cellarSlotId) {
+      const cellarType = ownedCellars.find(id => {
+        const cellar = WINE_CELLARS.find(c => c.id === id);
+        return cellar && cellarSlots[id]?.some(slot => slot.wineId === wine.id);
+      });
+      if (cellarType) {
+        const cellar = WINE_CELLARS.find(c => c.id === cellarType);
+        agingEfficiency = cellar ? cellar.agingEfficiency : 1.0;
+      }
+    }
+
+    if (ageInYears <= peakYears) {
+      // ピーク年齢までは品質が向上
+      const improvementRate = (wine.agingPotential / 100) * agingEfficiency;
+      const progressTowardPeak = Math.min(1.0, ageInYears / peakYears);
+      // 品質向上は曲線的（最初急激、後半緩やか）
+      const qualityBonus = improvementRate * 30 * Math.sqrt(progressTowardPeak);
+      agedQuality += qualityBonus;
+    } else {
+      // ピーク年齢を過ぎると緩やかに劣化
+      const declineYears = ageInYears - peakYears;
+      const declineRate = Math.min(0.5, declineYears / (peakYears * 2)); // 最大50%劣化
+      const peakQuality = wine.quality + (wine.agingPotential / 100) * 30 * agingEfficiency;
+      agedQuality = peakQuality * (1 - declineRate);
+    }
+
+    return Math.min(100, Math.max(wine.quality * 0.8, agedQuality)); // 最低でも元品質の80%は維持
+  }, [ownedCellars, cellarSlots]);
+
   // ワインの熟成（毎日）
   React.useEffect(() => {
-    setWines(prev => prev.map(wine => ({
-      ...wine,
-      age: day - wine.productionDate
-    })));
-  }, [day]);
+    setWines(prev => prev.map(wine => {
+      const newAge = day - wine.productionDate;
+      const newQuality = calculateAgedQuality(wine, newAge);
+
+      return {
+        ...wine,
+        age: newAge,
+        quality: Math.floor(newQuality),
+        value: Math.floor((wine.value * newQuality) / wine.quality) // 品質に比例して価値も変化
+      };
+    }));
+  }, [day, calculateAgedQuality]);
 
   const getPlotDisplay = (plot: Plot) => {
     if (!plot.isPlanted) return '⬜';
@@ -3084,6 +3720,13 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             >
               📰 イベント履歴 {eventHistory.length > 0 && `(${eventHistory.length})`}
             </button>
+            <button
+              onClick={() => setShowAchievements(true)}
+              className="achievements-btn"
+              title="実績とタイトルを確認"
+            >
+              🏆 実績 {achievementProgress.filter(a => a.completed).length}/{ACHIEVEMENTS.length}
+            </button>
           </div>
         </div>
       </div>
@@ -3096,6 +3739,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <span>💧 {water}</span>
             <span>🌱 {fertilizer}</span>
             <span>📅 {day}日目</span>
+            {currentTitle && (
+              <span className="current-title">
+                🏷️ {getTitleByName(currentTitle)?.emoji} {getTitleByName(currentTitle)?.name}
+              </span>
+            )}
             <span className={currentSeason.name === 'autumn' ? 'harvest-highlight-text' : ''}>
               {currentSeason.emoji}
               {currentSeason.name === 'autumn' ? '秋 - 収穫期！' : currentSeason.name_jp}
@@ -3206,40 +3854,79 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               {wines.length > 0 && (
                 <div className="wine-cellar">
                   <h3>🍷 ワインセラー</h3>
+
+                  {/* ワインセラー管理ボタン */}
+                  <div className="cellar-controls">
+                    <button
+                      onClick={() => setShowCellarPanel(true)}
+                      className="game-action-btn cellar-btn"
+                    >
+                      🏛️ セラー管理
+                    </button>
+                    <span className="cellar-status">
+                      保有セラー: {ownedCellars.length}個 |
+                      保管中: {wines.filter(w => w.storedInCellar).length}本
+                    </span>
+                  </div>
+
                   <div className="wines-grid">
-                    {wines.map(wine => (
-                      <div key={wine.id} className={`wine-item ${wine.isSpecial ? 'special-wine' : ''}`}>
-                        <div className="wine-header">
-                          <h4>
-                            {wine.isSpecial && <span className="special-wine-icon">👑</span>}
-                            {wine.name}
-                            {wine.isSpecial && <span className="special-wine-badge">マスター級</span>}
-                          </h4>
-                          <span className="wine-age">{wine.age}日熟成</span>
-                        </div>
-                        <div className="wine-details">
-                          <span className="wine-quality">
-                            品質: ★{wine.quality}
-                            {wine.masteryBonus && <small> (+{wine.masteryBonus})</small>}
-                          </span>
-                          <span className="wine-value">価値: {Math.floor(wine.value * (1 + Math.floor(wine.age / 10) * 0.1))}円</span>
-                        </div>
-                        {wine.isSpecial && (
-                          <div className="special-wine-description">
-                            {(() => {
-                              const specialInfo = getSpecialWineInfo(selectedRegion.koppenCode || '');
-                              return specialInfo ? <small>{specialInfo.description}</small> : null;
-                            })()}
+                    {wines.map(wine => {
+                      const ageInYears = Math.floor(wine.age / 365);
+                      const ageMonths = Math.floor((wine.age % 365) / 30);
+                      const peakYears = Math.floor(wine.peakAge / 365);
+                      const isAtPeak = ageInYears >= peakYears && ageInYears < peakYears + 2;
+                      const isPastPeak = ageInYears >= peakYears + 2;
+
+                      return (
+                        <div key={wine.id} className={`wine-item ${wine.isSpecial ? 'special-wine' : ''} ${wine.storedInCellar ? 'stored-wine' : ''}`}>
+                          <div className="wine-header">
+                            <h4>
+                              {wine.isSpecial && <span className="special-wine-icon">👑</span>}
+                              {wine.storedInCellar && <span className="cellar-stored-icon">🏛️</span>}
+                              {wine.name}
+                              {wine.isSpecial && <span className="special-wine-badge">マスター級</span>}
+                            </h4>
+                            <span className="wine-age">
+                              {ageInYears > 0 && `${ageInYears}年`}
+                              {ageMonths > 0 && `${ageMonths}ヶ月`}
+                              {ageInYears === 0 && ageMonths === 0 && `${wine.age}日`}熟成
+                            </span>
                           </div>
-                        )}
-                        <button
-                          onClick={() => sellWine(wine.id)}
-                          className={`sell-wine-btn ${wine.isSpecial ? 'special' : ''}`}
-                        >
-                          {wine.isSpecial ? '👑 売却' : '売却'}
-                        </button>
-                      </div>
-                    ))}
+                          <div className="wine-details">
+                            <span className="wine-quality">
+                              品質: ★{wine.quality}
+                              {wine.masteryBonus && <small> (+{wine.masteryBonus})</small>}
+                              {isAtPeak && <span className="peak-indicator">🌟 ピーク品質</span>}
+                              {isPastPeak && <span className="past-peak-indicator">⏰ 過熟</span>}
+                            </span>
+                            <span className="wine-value">価値: {wine.value}円</span>
+                            <div className="wine-aging-info">
+                              <small>
+                                熟成ポテンシャル: {wine.agingPotential}% |
+                                ピーク: {peakYears}年目
+                                {wine.storedInCellar && ' | セラー保管中'}
+                              </small>
+                            </div>
+                          </div>
+
+                          {wine.isSpecial && (
+                            <div className="special-wine-description">
+                              {(() => {
+                                const specialInfo = getSpecialWineInfo(selectedRegion.koppenCode || '');
+                                return specialInfo ? <small>{specialInfo.description}</small> : null;
+                              })()}
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => sellWine(wine.id)}
+                            className={`sell-wine-btn ${wine.isSpecial ? 'special' : ''}`}
+                          >
+                            {wine.isSpecial ? '👑 売却' : '売却'}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -3964,6 +4651,166 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           </div>
         )}
 
+        {/* 実績システムモーダル */}
+        {showAchievements && (
+          <div className="achievements-overlay">
+            <div className="achievements-modal">
+              <div className="achievements-header">
+                <div className="achievements-title">
+                  <h3>🏆 実績システム</h3>
+                  <div className="achievement-stats">
+                    {achievementProgress.filter(a => a.completed).length}/{ACHIEVEMENTS.length} 実績達成
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAchievements(false)}
+                  className="close-btn"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="achievements-content">
+                {/* タイトル選択セクション */}
+                {unlockedTitles.length > 0 && (
+                  <div className="title-selection-section">
+                    <h4>🏷️ 獲得タイトル</h4>
+                    <div className="titles-grid">
+                      <button
+                        onClick={() => setCurrentTitle(null)}
+                        className={`title-option ${currentTitle === null ? 'active' : ''}`}
+                      >
+                        なし
+                      </button>
+                      {unlockedTitles.map(titleId => {
+                        const title = getTitleByName(titleId);
+                        if (!title) return null;
+
+                        return (
+                          <button
+                            key={titleId}
+                            onClick={() => setCurrentTitle(titleId)}
+                            className={`title-option ${currentTitle === titleId ? 'active' : ''}`}
+                            title={title.description}
+                          >
+                            {title.emoji} {title.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 実績カテゴリータブ */}
+                <div className="achievement-categories">
+                  {['production', 'quality', 'economic', 'exploration', 'special', 'mastery'].map(category => {
+                    const categoryAchievements = ACHIEVEMENTS.filter(a => a.category === category);
+                    const completedCount = achievementProgress.filter(p =>
+                      p.completed && categoryAchievements.some(a => a.id === p.achievementId)
+                    ).length;
+
+                    const categoryEmojis = {
+                      production: '🏭',
+                      quality: '⭐',
+                      economic: '💰',
+                      exploration: '🌍',
+                      special: '🎪',
+                      mastery: '👑'
+                    };
+
+                    const categoryNames = {
+                      production: '生産',
+                      quality: '品質',
+                      economic: '経済',
+                      exploration: '探索',
+                      special: '特殊',
+                      mastery: 'マスタリー'
+                    };
+
+                    return (
+                      <div key={category} className="achievement-category">
+                        <h4>
+                          {categoryEmojis[category as keyof typeof categoryEmojis]} {categoryNames[category as keyof typeof categoryNames]}
+                          ({completedCount}/{categoryAchievements.length})
+                        </h4>
+                        <div className="achievements-grid">
+                          {categoryAchievements.map(achievement => {
+                            const progress = achievementProgress.find(p => p.achievementId === achievement.id);
+                            const isCompleted = progress?.completed || false;
+                            const isSecret = achievement.isSecret && !isCompleted;
+
+                            const tierColors = {
+                              bronze: '#CD7F32',
+                              silver: '#C0C0C0',
+                              gold: '#FFD700',
+                              diamond: '#B9F2FF',
+                              legendary: '#FF69B4'
+                            };
+
+                            return (
+                              <div
+                                key={achievement.id}
+                                className={`achievement-item ${isCompleted ? 'completed' : 'incomplete'} tier-${achievement.tier}`}
+                                style={{ borderColor: tierColors[achievement.tier] }}
+                              >
+                                <div className="achievement-icon">
+                                  {isSecret ? '❓' : achievement.emoji}
+                                </div>
+                                <div className="achievement-info">
+                                  <div className="achievement-name">
+                                    {isSecret ? '????' : achievement.name}
+                                    <span className="achievement-tier">
+                                      {achievement.tier === 'bronze' && '🥉'}
+                                      {achievement.tier === 'silver' && '🥈'}
+                                      {achievement.tier === 'gold' && '🥇'}
+                                      {achievement.tier === 'diamond' && '💎'}
+                                      {achievement.tier === 'legendary' && '👑'}
+                                    </span>
+                                  </div>
+                                  <div className="achievement-desc">
+                                    {isSecret ? '隠し実績です' : achievement.description}
+                                  </div>
+                                  {progress && !isSecret && (
+                                    <div className="achievement-progress">
+                                      {achievement.requirements.map((req, index) => {
+                                        const currentValue = progress.progress[req.type] || 0;
+                                        const progressPercent = Math.min((currentValue / req.target) * 100, 100);
+
+                                        return (
+                                          <div key={index} className="progress-bar">
+                                            <div className="progress-text">
+                                              {currentValue} / {req.target}
+                                            </div>
+                                            <div className="progress-bar-bg">
+                                              <div
+                                                className="progress-bar-fill"
+                                                style={{ width: `${progressPercent}%` }}
+                                              />
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {isCompleted && progress?.unlockedDay && (
+                                    <div className="unlock-day">
+                                      Day {progress.unlockedDay} に達成
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* アクティブイベント表示 */}
         {activeEvents.length > 0 && (
           <div className="active-events-panel">
@@ -3986,6 +4833,148 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ワインセラー管理パネル */}
+        {showCellarPanel && (
+          <div className="cellar-panel-overlay">
+            <div className="cellar-panel">
+              <div className="cellar-panel-header">
+                <h3>🏛️ ワインセラー管理</h3>
+                <button
+                  onClick={() => setShowCellarPanel(false)}
+                  className="close-btn"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="cellar-panel-content">
+                {/* セラー購入セクション */}
+                <div className="cellar-purchase-section">
+                  <h4>セラーを購入</h4>
+                  <div className="available-cellars">
+                    {WINE_CELLARS.map(cellar => {
+                      const isOwned = ownedCellars.includes(cellar.id);
+                      const canAfford = money >= cellar.purchaseCost;
+
+                      return (
+                        <div key={cellar.id} className={`cellar-option ${isOwned ? 'owned' : ''}`}>
+                          <div className="cellar-info">
+                            <h5>{cellar.emoji} {cellar.name}</h5>
+                            <p>{cellar.description}</p>
+                            <div className="cellar-specs">
+                              <span>容量: {cellar.capacity}本</span>
+                              <span>熟成効率: {Math.round(cellar.agingEfficiency * 100)}%</span>
+                              <span>維持費: {cellar.maintenanceCost}円/月</span>
+                            </div>
+                          </div>
+                          <div className="cellar-purchase">
+                            <div className="price">{cellar.purchaseCost}円</div>
+                            <button
+                              onClick={() => purchaseCellar(cellar.id)}
+                              className="purchase-btn"
+                              disabled={isOwned || !canAfford}
+                            >
+                              {isOwned ? '所有済み' : canAfford ? '購入' : '資金不足'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 保有セラー管理セクション */}
+                {ownedCellars.length > 0 && (
+                  <div className="owned-cellars-section">
+                    <h4>保有セラー</h4>
+                    {ownedCellars.map(cellarId => {
+                      const cellar = WINE_CELLARS.find(c => c.id === cellarId);
+                      const slots = cellarSlots[cellarId] || [];
+                      const occupiedSlots = slots.filter(s => s.wineId).length;
+
+                      if (!cellar) return null;
+
+                      return (
+                        <div key={cellarId} className="owned-cellar">
+                          <div className="cellar-header">
+                            <h5>{cellar.emoji} {cellar.name}</h5>
+                            <span className="capacity-info">
+                              {occupiedSlots}/{cellar.capacity}本保管中
+                            </span>
+                          </div>
+
+                          <div className="cellar-slots">
+                            {slots.map(slot => {
+                              const storedWine = slot.wineId ? wines.find(w => w.id === slot.wineId) : null;
+
+                              return (
+                                <div key={slot.id} className={`cellar-slot ${slot.wineId ? 'occupied' : 'empty'}`}>
+                                  {storedWine ? (
+                                    <div className="stored-wine">
+                                      <div className="wine-name">{storedWine.name}</div>
+                                      <div className="wine-details">
+                                        品質: {storedWine.quality} | {Math.floor((day - slot.storedDay) / 365)}年熟成
+                                      </div>
+                                      <button
+                                        onClick={() => removeWineFromCellar(storedWine.id)}
+                                        className="remove-wine-btn"
+                                      >
+                                        取出
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="empty-slot">
+                                      空きスロット
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 未保管ワインの保管 */}
+                          <div className="wine-storage-section">
+                            <h6>ワインを保管:</h6>
+                            <div className="available-wines">
+                              {wines.filter(w => !w.storedInCellar).map(wine => {
+                                const emptySlot = slots.find(s => !s.wineId);
+
+                                return (
+                                  <div key={wine.id} className="storable-wine">
+                                    <span>{wine.name} (品質: {wine.quality})</span>
+                                    <button
+                                      onClick={() => emptySlot && storeWineInCellar(wine.id, cellarId, emptySlot.id)}
+                                      className="store-wine-btn"
+                                      disabled={!emptySlot}
+                                    >
+                                      {emptySlot ? '保管' : '満杯'}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* セラー情報 */}
+                <div className="cellar-info-section">
+                  <h4>ℹ️ セラーについて</h4>
+                  <ul>
+                    <li>セラーに保管されたワインは効率的に熟成します</li>
+                    <li>熟成効率はセラーの種類によって異なります</li>
+                    <li>セラーには月額維持費がかかります</li>
+                    <li>ワインはいつでも取り出せます</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}
