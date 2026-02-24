@@ -9,14 +9,14 @@ import WineStatistics from './components/WineStatistics';
 import WineQuiz from './components/WineQuiz';
 import WineQuizStatistics from './components/WineQuizStatistics';
 import ScrollToTop from './components/ScrollToTop';
-import NetworkStatus from './components/NetworkStatus';
 import UserActivityTracker from './components/UserActivityTracker';
 import SearchHistoryPanel from './components/SearchHistoryPanel';
 import UserSettingsPanel from './components/UserSettingsPanel';
 import AdvancedWineForm from './components/AdvancedWineForm';
 import SimpleVineyardGame from './components/SimpleVineyardGame';
+import HeaderControls from './components/HeaderControls';
 import { AppProvider, useApp } from './contexts/AppContext';
-import { ThemeProvider, useTheme, getThemeIcon, getThemeName } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 export interface WineRegion {
   name: string;
@@ -47,7 +47,6 @@ export interface WineResponse {
 // 内部アプリコンポーネント
 function AppContent() {
   const { state, dispatch } = useApp();
-  const { state: themeState, actions: themeActions } = useTheme();
 
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [showWineList, setShowWineList] = useState(false);
@@ -121,44 +120,13 @@ function AppContent() {
             <p>ワインの感想を「飲みやすい」以外の一言で！</p>
           </div>
           {/* Header controls */}
-          <div className="header-status">
-            <button
-              onClick={() => setShowAdvancedForm(true)}
-              className="header-btn"
-              title="詳細ワイン登録"
-            >
-              📝
-            </button>
-            <button
-              onClick={() => setShowSearchHistory(true)}
-              className="header-btn"
-              title="検索履歴"
-            >
-              🕒
-            </button>
-            <button
-              onClick={() => setShowVineyardGame(true)}
-              className="header-btn"
-              title="ぶどう畑ゲーム"
-            >
-              🍇
-            </button>
-            <button
-              onClick={() => setShowUserSettings(true)}
-              className="header-btn"
-              title="設定"
-            >
-              ⚙️
-            </button>
-            <button
-              onClick={themeActions.toggleTheme}
-              className="header-btn theme-btn"
-              title={getThemeName(themeState.mode, themeState.actualTheme)}
-            >
-              {getThemeIcon(themeState.actualTheme, themeState.mode)}
-            </button>
-            <NetworkStatus showNotification={state.userPreferences.showNotifications} />
-          </div>
+          <HeaderControls
+            showNotifications={state.userPreferences.showNotifications}
+            onShowAdvancedForm={() => setShowAdvancedForm(true)}
+            onShowSearchHistory={() => setShowSearchHistory(true)}
+            onShowVineyardGame={() => setShowVineyardGame(true)}
+            onShowUserSettings={() => setShowUserSettings(true)}
+          />
         </div>
       </header>
 
