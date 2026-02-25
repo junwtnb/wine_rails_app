@@ -2680,6 +2680,26 @@
   }
 }
 
+/* Main Content Sections */
+.search-section {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.results-section {
+  min-height: 200px;
+  padding: 1rem 0;
+}
+
+[data-theme="dark"] .search-section,
+.theme-dark .search-section {
+  background: rgba(42, 42, 42, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* Search History Panel Styles */
 .search-history-overlay {
   position: fixed;

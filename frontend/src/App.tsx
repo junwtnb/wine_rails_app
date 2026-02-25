@@ -131,22 +131,28 @@ function AppContent() {
       </header>
 
       <main className="App-main">
-        <WineSearchForm
-          onResult={(result, query) => handleSearchResult(result, query, 'search')}
-          onError={handleError}
-          onLoadingChange={handleLoadingChange}
-          isLoading={state.isLoading}
-        />
+        {/* 検索セクション */}
+        <section className="search-section">
+          <WineSearchForm
+            onResult={(result, query) => handleSearchResult(result, query, 'search')}
+            onError={handleError}
+            onLoadingChange={handleLoadingChange}
+            isLoading={state.isLoading}
+          />
+        </section>
 
-        {state.isLoading && <div className="loading">検索中...</div>}
+        {/* 結果セクション */}
+        <section className="results-section">
+          {state.isLoading && <div className="loading">検索中...</div>}
 
-        {state.error && <div className="error">{state.error}</div>}
+          {state.error && <div className="error">{state.error}</div>}
 
-        {state.successMessage && <div className="success">{state.successMessage}</div>}
+          {state.successMessage && <div className="success">{state.successMessage}</div>}
 
-        {state.currentWineResult && !state.isLoading && (
-          <WineResult result={state.currentWineResult} />
-        )}
+          {state.currentWineResult && !state.isLoading && (
+            <WineResult result={state.currentWineResult} />
+          )}
+        </section>
 
       </main>
 
