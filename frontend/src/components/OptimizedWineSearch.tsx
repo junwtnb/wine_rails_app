@@ -16,7 +16,6 @@ interface OptimizedWineSearchProps {
 
 // メモ化されたワインカードコンポーネント
 const WineCard = memo<{ wine: Wine; onSelect: (wine: Wine) => void }>(({ wine, onSelect }) => {
-  console.log(`WineCard rendered for: ${wine.name}`); // レンダリング回数確認用
 
   // useCallbackでクリックハンドラーをメモ化
   const handleClick = useCallback(() => {
@@ -50,7 +49,6 @@ const SearchFilters = memo<{
   sortBy: string;
   onSortChange: (value: string) => void;
 }>(({ searchTerm, onSearchChange, minScore, onMinScoreChange, sortBy, onSortChange }) => {
-  console.log('SearchFilters rendered'); // レンダリング回数確認用
 
   return (
     <div className="search-filters">
@@ -107,7 +105,6 @@ const OptimizedWineSearch: React.FC<OptimizedWineSearchProps> = ({ onClose }) =>
   const [sortBy, setSortBy] = useState('name');
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
 
-  console.log('OptimizedWineSearch rendered'); // レンダリング回数確認用
 
   // サンプルデータ（本来はAPIから取得）
   const allWines: Wine[] = useMemo(() => [
@@ -125,22 +122,18 @@ const OptimizedWineSearch: React.FC<OptimizedWineSearchProps> = ({ onClose }) =>
 
   // useCallbackでハンドラーをメモ化（不要な再レンダリングを防止）
   const handleSearchChange = useCallback((value: string) => {
-    console.log('handleSearchChange called with:', value);
     setSearchTerm(value);
   }, []);
 
   const handleMinScoreChange = useCallback((value: number) => {
-    console.log('handleMinScoreChange called with:', value);
     setMinScore(value);
   }, []);
 
   const handleSortChange = useCallback((value: string) => {
-    console.log('handleSortChange called with:', value);
     setSortBy(value);
   }, []);
 
   const handleWineSelect = useCallback((wine: Wine) => {
-    console.log('handleWineSelect called with:', wine.name);
     setSelectedWine(wine);
   }, []);
 
@@ -150,7 +143,6 @@ const OptimizedWineSearch: React.FC<OptimizedWineSearchProps> = ({ onClose }) =>
 
   // useMemoで重い計算をメモ化
   const filteredAndSortedWines = useMemo(() => {
-    console.log('filteredAndSortedWines calculation started');
 
     let filtered = allWines;
 
@@ -184,7 +176,6 @@ const OptimizedWineSearch: React.FC<OptimizedWineSearchProps> = ({ onClose }) =>
       }
     });
 
-    console.log('filteredAndSortedWines calculation completed');
     return filtered;
   }, [allWines, searchTerm, minScore, sortBy]);
 
@@ -282,7 +273,7 @@ const OptimizedWineSearch: React.FC<OptimizedWineSearchProps> = ({ onClose }) =>
         {process.env.NODE_ENV === 'development' && (
           <div className="dev-info">
             <h4>🔧 開発者情報</h4>
-            <p>• コンソールでレンダリング回数を確認できます</p>
+            <p>• React.memo, useCallback, useMemo でパフォーマンス最適化</p>
             <p>• useCallback, useMemo, React.memo を活用</p>
             <p>• フィルター変更時の無駄な再レンダリングを防止</p>
           </div>
