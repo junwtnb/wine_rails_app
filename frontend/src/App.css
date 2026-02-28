@@ -2680,6 +2680,49 @@
   }
 }
 
+/* Loading Spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(123, 97, 255, 0.2);
+  border-top: 3px solid #7b61ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #7b61ff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Dark theme support for loading */
+[data-theme="dark"] .loading-spinner,
+.theme-dark .loading-spinner {
+  border-color: rgba(139, 123, 255, 0.2);
+  border-top-color: #8b7bff;
+}
+
+[data-theme="dark"] .loading-text,
+.theme-dark .loading-text {
+  color: #8b7bff;
+}
+
 /* Main Content Sections */
 .search-section {
   background: rgba(255, 255, 255, 0.8);

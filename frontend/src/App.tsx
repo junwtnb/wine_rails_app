@@ -143,7 +143,12 @@ function AppContent() {
 
         {/* 結果セクション */}
         <section className="results-section">
-          {state.isLoading && <div className="loading">検索中...</div>}
+          {state.isLoading && (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <div className="loading-text">検索中...</div>
+            </div>
+          )}
 
           {state.error && <div className="error">{state.error}</div>}
 
