@@ -46,17 +46,22 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
           onClick={() => setShowToolsDropdown(!showToolsDropdown)}
           className="header-btn dropdown-trigger"
           title="ツール"
+          aria-label="ツールメニューを開く"
+          aria-expanded={showToolsDropdown}
+          aria-haspopup="true"
         >
           🛠️
         </button>
         {showToolsDropdown && (
-          <div className="dropdown-menu">
+          <div className="dropdown-menu" role="menu" aria-label="ツールメニュー">
             <button
               onClick={() => {
                 onShowAdvancedForm();
                 setShowToolsDropdown(false);
               }}
               className="dropdown-item"
+              role="menuitem"
+              aria-label="詳細ワイン登録画面を開く"
             >
               <span className="dropdown-icon">📝</span>
               <span className="dropdown-label">詳細ワイン登録</span>
@@ -67,6 +72,8 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
                 setShowToolsDropdown(false);
               }}
               className="dropdown-item"
+              role="menuitem"
+              aria-label="検索履歴を表示"
             >
               <span className="dropdown-icon">🕒</span>
               <span className="dropdown-label">検索履歴</span>
@@ -77,6 +84,8 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
                 setShowToolsDropdown(false);
               }}
               className="dropdown-item"
+              role="menuitem"
+              aria-label="ぶどう畑ゲームを開始"
             >
               <span className="dropdown-icon">🍇</span>
               <span className="dropdown-label">ぶどう畑ゲーム</span>
@@ -91,17 +100,22 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
           onClick={() => setShowUserDropdown(!showUserDropdown)}
           className="header-btn dropdown-trigger"
           title="アカウント・設定"
+          aria-label="ユーザー設定メニューを開く"
+          aria-expanded={showUserDropdown}
+          aria-haspopup="true"
         >
           👤
         </button>
         {showUserDropdown && (
-          <div className="dropdown-menu">
+          <div className="dropdown-menu" role="menu" aria-label="ユーザー設定メニュー">
             <button
               onClick={() => {
                 onShowUserSettings();
                 setShowUserDropdown(false);
               }}
               className="dropdown-item"
+              role="menuitem"
+              aria-label="ユーザー設定を開く"
             >
               <span className="dropdown-icon">⚙️</span>
               <span className="dropdown-label">設定</span>
@@ -112,6 +126,8 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
                 setShowUserDropdown(false);
               }}
               className="dropdown-item"
+              role="menuitem"
+              aria-label={`テーマを${themeState.mode === 'dark' ? 'ライト' : 'ダーク'}モードに変更`}
             >
               <span className="dropdown-icon">
                 {getThemeIcon(themeState.actualTheme, themeState.mode)}

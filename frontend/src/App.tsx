@@ -106,7 +106,7 @@ function AppContent() {
 
   return (
     <div className="App">
-      <header className="App-header">
+      <header className="App-header" role="banner">
         <div className="header-content">
           <HamburgerMenu
             onShowWineList={() => setShowWineList(true)}
@@ -130,9 +130,9 @@ function AppContent() {
         </div>
       </header>
 
-      <main className="App-main">
+      <main className="App-main" role="main">
         {/* 検索セクション */}
-        <section className="search-section">
+        <section className="search-section" aria-label="ワイン検索">
           <WineSearchForm
             onResult={(result, query) => handleSearchResult(result, query, 'search')}
             onError={handleError}
@@ -142,17 +142,17 @@ function AppContent() {
         </section>
 
         {/* 結果セクション */}
-        <section className="results-section">
+        <section className="results-section" aria-label="検索結果" aria-live="polite">
           {state.isLoading && (
-            <div className="loading-container">
+            <div className="loading-container" role="status" aria-label="検索中">
               <div className="loading-spinner"></div>
               <div className="loading-text">検索中...</div>
             </div>
           )}
 
-          {state.error && <div className="error">{state.error}</div>}
+          {state.error && <div className="error" role="alert" aria-live="assertive">{state.error}</div>}
 
-          {state.successMessage && <div className="success">{state.successMessage}</div>}
+          {state.successMessage && <div className="success" role="status" aria-live="polite">{state.successMessage}</div>}
 
           {state.currentWineResult && !state.isLoading && (
             <WineResult result={state.currentWineResult} />
@@ -161,11 +161,15 @@ function AppContent() {
 
       </main>
 
-      <footer className="App-footer">
+      <footer className="App-footer" role="contentinfo">
         <div className="usage-guide">
           <h3
             className="usage-toggle"
             onClick={() => setShowUsageGuide(!showUsageGuide)}
+            role="button"
+            tabIndex={0}
+            aria-expanded={showUsageGuide}
+            aria-label="使用ガイドの表示切り替え"
           >
             こんなときにつかってください {showUsageGuide ? '▲' : '▼'}
           </h3>
