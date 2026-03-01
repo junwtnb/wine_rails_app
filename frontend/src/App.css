@@ -2526,8 +2526,10 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  width: 2.5rem;
-  height: 2.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
 .header-btn:hover {
@@ -3548,8 +3550,10 @@
   }
 
   .header-btn {
-    width: 2rem;
-    height: 2rem;
+    min-width: 44px;
+    min-height: 44px;
+    width: 2.75rem;
+    height: 2.75rem;
     font-size: 1rem;
   }
 
@@ -3730,8 +3734,10 @@
   border: none;
   color: white;
   font-size: 1.2rem;
-  width: 2rem;
-  height: 2rem;
+  min-width: 44px;
+  min-height: 44px;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
