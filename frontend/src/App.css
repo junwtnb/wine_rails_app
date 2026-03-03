@@ -2577,6 +2577,8 @@
   min-height: 44px;
   width: 2.75rem;
   height: 2.75rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .header-btn:hover {
@@ -2759,6 +2761,152 @@
   padding: 1rem 0;
 }
 
+
+/* Micro-interactions and Animations */
+
+/* Button pulse effect */
+.header-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  transform: translate(-50%, -50%);
+}
+
+.header-btn:active::before {
+  width: 100%;
+  height: 100%;
+}
+
+/* Card hover effects */
+.search-section {
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--shadow-medium);
+}
+
+/* Dropdown entrance animation */
+.dropdown-menu {
+  transform-origin: top right;
+  animation: dropdownSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Success message animation */
+.success {
+  animation: successPulse 0.6s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.success::before {
+  content: '✨';
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: sparkle 2s infinite;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-50%) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* Loading spinner enhancement */
+.loading-spinner {
+  animation: spin 1s linear infinite, pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(123, 97, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(123, 97, 255, 0);
+  }
+}
+
+/* Button press feedback */
+.dropdown-item {
+  transform: translateX(0);
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  transform: translateX(4px);
+  padding-left: 1.25rem;
+}
+
+.dropdown-item:active {
+  transform: scale(0.98) translateX(4px);
+}
+
+/* Floating animation for loading */
+.loading-container {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Smooth state transitions for interactive elements */
+button, .dropdown-item, .search-section {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Focus states with accessibility */
+.header-btn:focus-visible,
+.dropdown-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
 
 /* Search History Panel Styles */
 .search-history-overlay {
