@@ -1,18 +1,65 @@
+:root {
+  /* Light theme colors */
+  --color-primary: #7b61ff;
+  --color-primary-light: #8b7bff;
+  --color-primary-dark: #6b51ef;
+  --color-secondary: #667eea;
+  --color-accent: #764ba2;
+
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: rgba(255, 255, 255, 0.8);
+  --bg-tertiary: rgba(255, 255, 255, 0.1);
+
+  /* Text colors */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+
+  /* Border colors */
+  --border-light: rgba(0, 0, 0, 0.1);
+  --border-medium: rgba(0, 0, 0, 0.2);
+
+  /* Status colors */
+  --color-success: #28a745;
+  --color-error: #dc3545;
+  --color-warning: #ffc107;
+
+  /* Shadow colors */
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --shadow-dark: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"],
+.theme-dark {
+  /* Dark theme colors */
+  --bg-primary: #121212;
+  --bg-secondary: rgba(42, 42, 42, 0.8);
+  --bg-tertiary: rgba(255, 255, 255, 0.05);
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-muted: #888888;
+
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.2);
+
+  --shadow-light: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.4);
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+}
+
 .App {
   text-align: center;
   min-height: 100vh;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Georgia', 'Times New Roman', serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Theme support */
-[data-theme="dark"] .App,
-.theme-dark .App {
-  background: #121212;
-  color: #e0e0e0;
-}
 
 .theme-transitioning {
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -2515,7 +2562,7 @@
 
 /* Header button styles */
 .header-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
   border: none;
   color: inherit;
   padding: 0.5rem;
@@ -2533,12 +2580,12 @@
 }
 
 .header-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--border-light);
   transform: scale(1.1);
 }
 
 .theme-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
   color: white;
 }
 
@@ -2591,10 +2638,10 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-medium);
   min-width: 180px;
   z-index: 1000;
   opacity: 0;
@@ -2621,11 +2668,11 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   font-size: 0.9rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .dropdown-item:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-tertiary);
 }
 
 .dropdown-item:first-child {
@@ -2647,23 +2694,7 @@
   font-weight: 500;
 }
 
-/* Dark theme support for dropdowns */
-[data-theme="dark"] .dropdown-menu,
-.theme-dark .dropdown-menu {
-  background: #2a2a2a;
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .dropdown-item,
-.theme-dark .dropdown-item {
-  color: #e0e0e0;
-}
-
-[data-theme="dark"] .dropdown-item:hover,
-.theme-dark .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+/* Dark theme support is now handled by CSS custom properties */
 
 /* Mobile responsiveness for dropdowns */
 @media (max-width: 768px) {
@@ -2696,13 +2727,13 @@
   width: 40px;
   height: 40px;
   border: 3px solid rgba(123, 97, 255, 0.2);
-  border-top: 3px solid #7b61ff;
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .loading-text {
-  color: #7b61ff;
+  color: var(--color-primary);
   font-size: 1.1rem;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -2713,25 +2744,14 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Dark theme support for loading */
-[data-theme="dark"] .loading-spinner,
-.theme-dark .loading-spinner {
-  border-color: rgba(139, 123, 255, 0.2);
-  border-top-color: #8b7bff;
-}
-
-[data-theme="dark"] .loading-text,
-.theme-dark .loading-text {
-  color: #8b7bff;
-}
 
 /* Main Content Sections */
 .search-section {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-light);
 }
 
 .results-section {
@@ -2739,11 +2759,6 @@
   padding: 1rem 0;
 }
 
-[data-theme="dark"] .search-section,
-.theme-dark .search-section {
-  background: rgba(42, 42, 42, 0.8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
 
 /* Search History Panel Styles */
 .search-history-overlay {
