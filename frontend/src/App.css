@@ -6,9 +6,16 @@
   --color-secondary: #667eea;
   --color-accent: #764ba2;
 
+  /* Gradient backgrounds */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-wine: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+  --gradient-sunset: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+  --gradient-overlay: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+
   /* Background colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: rgba(255, 255, 255, 0.8);
+  --bg-primary: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  --bg-secondary: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.8) 100%);
   --bg-tertiary: rgba(255, 255, 255, 0.1);
 
   /* Text colors */
@@ -34,9 +41,12 @@
 [data-theme="dark"],
 .theme-dark {
   /* Dark theme colors */
-  --bg-primary: #121212;
-  --bg-secondary: rgba(42, 42, 42, 0.8);
+  --bg-primary: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+  --bg-secondary: linear-gradient(135deg, rgba(42, 42, 42, 0.9) 0%, rgba(60, 60, 60, 0.8) 100%);
   --bg-tertiary: rgba(255, 255, 255, 0.05);
+
+  /* Dark theme gradients */
+  --gradient-overlay: linear-gradient(135deg, rgba(139, 123, 255, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
 
   --text-primary: #e0e0e0;
   --text-secondary: #b0b0b0;
@@ -2586,10 +2596,6 @@
   transform: scale(1.1);
 }
 
-.theme-btn {
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
-  color: white;
-}
 
 [data-theme="dark"] .header-btn,
 .theme-dark .header-btn {
@@ -2898,6 +2904,133 @@
 /* Smooth state transitions for interactive elements */
 button, .dropdown-item, .search-section {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Beautiful gradient backgrounds */
+.App-header {
+  background: var(--gradient-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.App-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-overlay);
+  pointer-events: none;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Enhanced search section with gradient border */
+.search-section {
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.search-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--gradient-primary);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: subtract;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Gradient buttons */
+.theme-btn {
+  background: var(--gradient-primary);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-wine);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.theme-btn:hover::after {
+  opacity: 1;
+}
+
+.theme-btn span,
+.theme-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Success message with gradient */
+.success {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  color: #155724;
+}
+
+[data-theme="dark"] .success,
+.theme-dark .success {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.2) 0%, rgba(40, 167, 69, 0.1) 100%);
+  color: #d1eddb;
+}
+
+/* Error message with gradient */
+.error {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: #721c24;
+}
+
+[data-theme="dark"] .error,
+.theme-dark .error {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.1) 100%);
+  color: #f8d7da;
+}
+
+/* Floating background elements */
+.App::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 70%, rgba(102, 126, 234, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 70% 30%, rgba(118, 75, 162, 0.03) 0%, transparent 50%);
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes backgroundFloat {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
 }
 
 /* Focus states with accessibility */
