@@ -20,6 +20,8 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
   const { state: themeState, actions: themeActions } = useTheme();
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [toolsPosition, setToolsPosition] = useState({ top: 0, right: 0 });
+  const [userPosition, setUserPosition] = useState({ top: 0, right: 0 });
   const toolsRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
@@ -38,12 +40,37 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 位置計算関数
+  const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return { top: 0, right: 0 };
+    const rect = ref.current.getBoundingClientRect();
+    return {
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right
+    };
+  };
+
+  // ドロップダウン開閉ハンドラー
+  const handleToolsToggle = () => {
+    if (!showToolsDropdown) {
+      setToolsPosition(calculatePosition(toolsRef));
+    }
+    setShowToolsDropdown(!showToolsDropdown);
+  };
+
+  const handleUserToggle = () => {
+    if (!showUserDropdown) {
+      setUserPosition(calculatePosition(userRef));
+    }
+    setShowUserDropdown(!showUserDropdown);
+  };
+
   return (
     <div className="header-controls">
       {/* ツール系のドロップダウン */}
       <div className="dropdown-container" ref={toolsRef}>
         <button
-          onClick={() => setShowToolsDropdown(!showToolsDropdown)}
+          onClick={handleToolsToggle}
           className="header-btn dropdown-trigger"
           title="ツール"
           aria-label="ツールメニューを開く"
@@ -53,7 +80,16 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
           🛠️
         </button>
         {showToolsDropdown && (
-          <div className="dropdown-menu" role="menu" aria-label="ツールメニュー">
+          <div
+            className="dropdown-menu"
+            role="menu"
+            aria-label="ツールメニュー"
+            style={{
+              position: 'fixed',
+              top: `${toolsPosition.top}px`,
+              right: `${toolsPosition.right}px`
+            }}
+          >
             <button
               onClick={() => {
                 onShowAdvancedForm();
@@ -97,7 +133,7 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
       {/* ユーザー設定系のドロップダウン */}
       <div className="dropdown-container" ref={userRef}>
         <button
-          onClick={() => setShowUserDropdown(!showUserDropdown)}
+          onClick={handleUserToggle}
           className="header-btn dropdown-trigger"
           title="アカウント・設定"
           aria-label="ユーザー設定メニューを開く"
@@ -107,7 +143,16 @@ const HeaderControls: React.FC<HeaderControlsProps> = ({
           👤
         </button>
         {showUserDropdown && (
-          <div className="dropdown-menu" role="menu" aria-label="ユーザー設定メニュー">
+          <div
+            className="dropdown-menu"
+            role="menu"
+            aria-label="ユーザー設定メニュー"
+            style={{
+              position: 'fixed',
+              top: `${userPosition.top}px`,
+              right: `${userPosition.right}px`
+            }}
+          >
             <button
               onClick={() => {
                 onShowUserSettings();
