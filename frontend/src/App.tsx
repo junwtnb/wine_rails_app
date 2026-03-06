@@ -157,6 +157,31 @@ function AppContent() {
           {state.currentWineResult && !state.isLoading && (
             <WineResult result={state.currentWineResult} />
           )}
+
+          {!state.currentWineResult && !state.isLoading && !state.error && !state.successMessage && (
+            <div className="empty-state">
+              <div className="empty-state-icon">🍷</div>
+              <h2 className="empty-state-title">ワインの世界へようこそ</h2>
+              <p className="empty-state-description">
+                お気に入りのワインを見つけるために、<br />
+                ワイン名や特徴を入力してみてください
+              </p>
+              <div className="empty-state-suggestions">
+                <div className="suggestion-item">
+                  <span className="suggestion-icon">🔍</span>
+                  <span>「シャルドネ」「カベルネ」などのぶどう品種</span>
+                </div>
+                <div className="suggestion-item">
+                  <span className="suggestion-icon">🌍</span>
+                  <span>「フランス」「イタリア」などの産地</span>
+                </div>
+                <div className="suggestion-item">
+                  <span className="suggestion-icon">🎯</span>
+                  <span>「辛口」「甘口」などの味わい</span>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
       </main>
