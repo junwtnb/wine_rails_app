@@ -15,6 +15,8 @@ import UserSettingsPanel from './components/UserSettingsPanel';
 import AdvancedWineForm from './components/AdvancedWineForm';
 import SimpleVineyardGame from './components/SimpleVineyardGame';
 import HeaderControls from './components/HeaderControls';
+import ToastContainer from './components/ToastContainer';
+import { ToastMessage } from './components/ToastNotification';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
@@ -48,6 +50,7 @@ export interface WineResponse {
 function AppContent() {
   const { state, dispatch } = useApp();
 
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [showWineList, setShowWineList] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
@@ -57,6 +60,28 @@ function AppContent() {
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showAdvancedForm, setShowAdvancedForm] = useState(false);
   const [showVineyardGame, setShowVineyardGame] = useState(false);
+
+  // Toast管理関数
+  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { ...toast, id }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const showSuccessToast = (title: string, message: string, action?: ToastMessage['action']) => {
+    addToast({ type: 'success', title, message, action, duration: 4000 });
+  };
+
+  const showErrorToast = (title: string, message: string, action?: ToastMessage['action']) => {
+    addToast({ type: 'error', title, message, action, duration: 5000 });
+  };
+
+  const showInfoToast = (title: string, message: string, action?: ToastMessage['action']) => {
+    addToast({ type: 'info', title, message, action, duration: 4000 });
+  };
 
   const handleSearchResult = (result: WineResponse, query: string = '', source: 'search' | 'random' | 'quiz' = 'search') => {
     dispatch({ type: 'SET_WINE_RESULT', payload: result });
@@ -70,11 +95,31 @@ function AppContent() {
         payload: { query, result, source }
       });
     }
+
+    // 成功Toast表示
+    showSuccessToast(
+      '検索完了！',
+      `「${result.wine.name || 'ワイン'}」の情報を取得しました`,
+      {
+        label: '履歴を見る',
+        onClick: () => setShowSearchHistory(true)
+      }
+    );
   };
 
   const handleError = (errorMessage: string) => {
     dispatch({ type: 'SET_ERROR', payload: errorMessage });
     dispatch({ type: 'SET_WINE_RESULT', payload: null });
+
+    // エラーToast表示
+    showErrorToast(
+      '検索エラー',
+      errorMessage,
+      {
+        label: '再試行',
+        onClick: () => dispatch({ type: 'SET_ERROR', payload: null })
+      }
+    );
   };
 
   const handleLoadingChange = (loading: boolean) => {
@@ -97,10 +142,24 @@ function AppContent() {
       // APIへの送信処理をここに実装
       console.log('Advanced Wine Form submitted:', formData);
 
-      handleAddSuccess('詳細ワイン登録が完了しました！');
+      showSuccessToast(
+        '登録完了！',
+        '詳細ワイン情報が正常に登録されました',
+        {
+          label: 'ワインリストを見る',
+          onClick: () => setShowWineList(true)
+        }
+      );
       setShowAdvancedForm(false);
     } catch (error) {
-      handleAddError('詳細ワイン登録に失敗しました');
+      showErrorToast(
+        '登録失敗',
+        '詳細ワイン登録に失敗しました。再度お試しください。',
+        {
+          label: 'フォームに戻る',
+          onClick: () => setShowAdvancedForm(true)
+        }
+      );
     }
   };
 
@@ -150,9 +209,6 @@ function AppContent() {
             </div>
           )}
 
-          {state.error && <div className="error" role="alert" aria-live="assertive">{state.error}</div>}
-
-          {state.successMessage && <div className="success" role="status" aria-live="polite">{state.successMessage}</div>}
 
           {state.currentWineResult && !state.isLoading && (
             <WineResult result={state.currentWineResult} />
@@ -264,6 +320,9 @@ function AppContent() {
           />
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }
