@@ -236,6 +236,25 @@ interface AchievementProgress {
   unlockedDay: number | null;
 }
 
+interface LearningQuiz {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  type: 'climate' | 'grape' | 'disease' | 'general';
+  difficulty: 'easy' | 'medium' | 'hard';
+  reward: number; // お金の報酬
+}
+
+interface LearningFact {
+  id: string;
+  title: string;
+  content: string;
+  type: 'climate' | 'grape' | 'disease' | 'terroir' | 'general';
+  emoji: string;
+}
+
 interface SimpleVineyardGameProps {
   onClose: () => void;
 }
@@ -270,6 +289,90 @@ const DISEASES: Disease[] = [
     spreadChance: 0.02, // 8%→2%に減少
     treatmentCost: 300,
     cureDays: 7
+  }
+];
+
+const LEARNING_QUIZZES: LearningQuiz[] = [
+  {
+    id: 'climate_koppen_basic',
+    question: 'ケッペン気候区分で「Cfb」は何を意味しますか？',
+    options: ['乾燥した暑い気候', '温帯の海洋性気候', '寒帯の気候', '熱帯の気候'],
+    correctAnswer: 1,
+    explanation: 'Cfbは西岸海洋性気候を表し、年間を通して温暖で降水量が豊富な気候です。ヨーロッパの多くのワイン産地がこの気候に該当します。',
+    type: 'climate',
+    difficulty: 'medium',
+    reward: 150
+  },
+  {
+    id: 'grape_pinot_noir',
+    question: 'ピノ・ノワールの栽培に最適な気候は？',
+    options: ['非常に暑い乾燥した気候', '冷涼で湿度のある気候', '極寒の気候', '熱帯の気候'],
+    correctAnswer: 1,
+    explanation: 'ピノ・ノワールは冷涼な気候を好み、ブルゴーニュやオレゴンなどで高品質なワインが造られています。暑すぎると繊細な香りが失われてしまいます。',
+    type: 'grape',
+    difficulty: 'easy',
+    reward: 100
+  },
+  {
+    id: 'disease_powdery_mildew',
+    question: 'うどん粉病の主な原因は？',
+    options: ['過度な水分', '乾燥と高温', '土壌の酸性化', '昆虫による被害'],
+    correctAnswer: 1,
+    explanation: 'うどん粉病は乾燥した高温の環境で発生しやすい真菌性の病気です。葉の表面に白い粉状のカビが現れるのが特徴です。',
+    type: 'disease',
+    difficulty: 'medium',
+    reward: 200
+  },
+  {
+    id: 'terroir_concept',
+    question: 'テロワールとは何ですか？',
+    options: ['ワインの価格', '土壌、気候、地形の組み合わせ', 'ブドウの品種', 'ワイナリーの技術'],
+    correctAnswer: 1,
+    explanation: 'テロワールはフランス語で「土地」を意味し、土壌、気候、地形、そして人的要因が組み合わさってワインに独特の個性を与える概念です。',
+    type: 'general',
+    difficulty: 'easy',
+    reward: 120
+  },
+  {
+    id: 'climate_diurnal_range',
+    question: '日較差が大きいとブドウにどんな影響がありますか？',
+    options: ['酸味が失われる', '色が薄くなる', '酸味と糖度のバランスが良くなる', '病気になりやすくなる'],
+    correctAnswer: 2,
+    explanation: '昼夜の寒暖差（日較差）が大きいと、昼は光合成で糖度が上がり、夜は涼しくなって酸味が保たれるため、バランスの良いブドウができます。',
+    type: 'climate',
+    difficulty: 'hard',
+    reward: 250
+  }
+];
+
+const LEARNING_FACTS: LearningFact[] = [
+  {
+    id: 'fact_terroir_burgundy',
+    title: 'ブルゴーニュのテロワール',
+    content: 'ブルゴーニュは石灰岩土壌が多く、ピノ・ノワールとシャルドネの栽培に最適です。畑ごとに微妙に異なる土壌がワインに複雑性をもたらします。',
+    type: 'terroir',
+    emoji: '🪨'
+  },
+  {
+    id: 'fact_climate_maritime',
+    title: '海洋性気候の特徴',
+    content: '海洋性気候では海からの風が気温を穏やかに保ちます。ボルドーやナパヴァレーなど、多くの著名なワイン産地がこの気候の恩恵を受けています。',
+    type: 'climate',
+    emoji: '🌊'
+  },
+  {
+    id: 'fact_grape_altitude',
+    title: '標高とブドウ栽培',
+    content: '標高が高くなると気温が下がり、日較差が大きくなります。アルゼンチンのメンドーサなど高地の産地では、標高1000m以上でブドウを栽培しています。',
+    type: 'grape',
+    emoji: '⛰️'
+  },
+  {
+    id: 'fact_disease_prevention',
+    title: '有機栽培の重要性',
+    content: '化学農薬に頼らない有機栽培は、土壌の微生物バランスを保ち、ブドウの木の自然な抵抗力を高めます。長期的には病気に強い畑作りにつながります。',
+    type: 'disease',
+    emoji: '🌱'
   }
 ];
 
@@ -1167,6 +1270,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // 学習機能の状態
+  const [currentQuiz, setCurrentQuiz] = useState<LearningQuiz | null>(null);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [currentFact, setCurrentFact] = useState<LearningFact | null>(null);
+  const [showFactModal, setShowFactModal] = useState(false);
+  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
+  const [seenFacts, setSeenFacts] = useState<string[]>([]);
+  const [learningScore, setLearningScore] = useState(0);
+  const [showLearningPanel, setShowLearningPanel] = useState(false);
+
   // 気候マスターレベルシステム
   const [regionExperience, setRegionExperience] = useState<Record<string, number>>({});
 
@@ -1223,6 +1336,53 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
   }, []);
+
+  // 学習クイズの生成と表示
+  const triggerLearningQuiz = useCallback(() => {
+    const availableQuizzes = LEARNING_QUIZZES.filter(quiz => !completedQuizzes.includes(quiz.id));
+    if (availableQuizzes.length > 0) {
+      const randomQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
+      setCurrentQuiz(randomQuiz);
+      setShowQuizModal(true);
+    }
+  }, [completedQuizzes]);
+
+  // 学習ファクトの表示
+  const triggerLearningFact = useCallback(() => {
+    const availableFacts = LEARNING_FACTS.filter(fact => !seenFacts.includes(fact.id));
+    if (availableFacts.length > 0) {
+      const randomFact = availableFacts[Math.floor(Math.random() * availableFacts.length)];
+      setCurrentFact(randomFact);
+      setShowFactModal(true);
+    }
+  }, [seenFacts]);
+
+  // クイズ回答処理
+  const handleQuizAnswer = useCallback((selectedAnswer: number) => {
+    if (!currentQuiz) return;
+
+    const isCorrect = selectedAnswer === currentQuiz.correctAnswer;
+
+    if (isCorrect) {
+      setMoney(prev => prev + currentQuiz.reward);
+      setLearningScore(prev => prev + currentQuiz.reward / 10);
+      setCompletedQuizzes(prev => [...prev, currentQuiz.id]);
+      showToast(`🎉 正解！${currentQuiz.reward}円獲得！`);
+    } else {
+      showToast('❌ 不正解... 解説を読んで学習しましょう！');
+    }
+  }, [currentQuiz, showToast]);
+
+  // ファクト確認処理
+  const handleFactRead = useCallback(() => {
+    if (!currentFact) return;
+
+    setSeenFacts(prev => [...prev, currentFact.id]);
+    setLearningScore(prev => prev + 5);
+    setShowFactModal(false);
+    setCurrentFact(null);
+    showToast('📚 知識ポイント +5');
+  }, [currentFact, showToast]);
 
   // 実績処理関数
   const updateAchievementProgress = useCallback((type: string, value: number, additionalData?: any) => {
@@ -2827,6 +2987,17 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           }));
         }
       }
+
+      // 学習クイズの自動トリガー（7日に1回程度）
+      if (newDay % 7 === 0 && Math.random() < 0.4) {
+        setTimeout(() => triggerLearningQuiz(), 1000);
+      }
+
+      // 学習ファクトの自動表示（5日に1回程度）
+      if ((newDay + 2) % 5 === 0 && Math.random() < 0.5) {
+        setTimeout(() => triggerLearningFact(), 2000);
+      }
+
       return newDay;
     });
 
@@ -4979,6 +5150,89 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           </div>
         )}
 
+        {/* 学習クイズモーダル */}
+        {showQuizModal && currentQuiz && (
+          <div className="modal-overlay" style={{ zIndex: 2000 }}>
+            <div className="quiz-modal">
+              <div className="quiz-header">
+                <h3>🎓 ワイン学習クイズ</h3>
+              </div>
+              <div className="quiz-content">
+                <div className="quiz-question">
+                  <p>{currentQuiz.question}</p>
+                </div>
+                <div className="quiz-options">
+                  {currentQuiz.options.map((option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        if (index === currentQuiz.correctAnswer) {
+                          setMoney(prev => prev + currentQuiz.reward);
+                          setLearningScore(prev => prev + 10);
+                          setCompletedQuizzes(prev => [...prev, currentQuiz.id]);
+                          showToast(`🎉 正解！報酬として${currentQuiz.reward}円と学習スコア+10を獲得しました！\n\n💡 ${currentQuiz.explanation}`);
+                        } else {
+                          showToast(`❌ 不正解... 正解は「${currentQuiz.options[currentQuiz.correctAnswer]}」でした。\n\n💡 ${currentQuiz.explanation}`);
+                        }
+                        setShowQuizModal(false);
+                        setCurrentQuiz(null);
+                      }}
+                      className="quiz-option"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="quiz-footer">
+                <small>正解すると{currentQuiz.reward}円と学習スコア+10を獲得</small>
+                <button
+                  onClick={() => {
+                    setShowQuizModal(false);
+                    setCurrentQuiz(null);
+                  }}
+                  className="quiz-skip"
+                >
+                  スキップ
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 学習ファクトモーダル */}
+        {showFactModal && currentFact && (
+          <div className="modal-overlay" style={{ zIndex: 2000 }}>
+            <div className="fact-modal">
+              <div className="fact-header">
+                <h3>📚 ワイン豆知識</h3>
+              </div>
+              <div className="fact-content">
+                <div className="fact-title">
+                  <h4>{currentFact.title}</h4>
+                </div>
+                <div className="fact-description">
+                  <p>{currentFact.content}</p>
+                </div>
+              </div>
+              <div className="fact-footer">
+                <button
+                  onClick={() => {
+                    setShowFactModal(false);
+                    setCurrentFact(null);
+                    setSeenFacts(prev => [...prev, currentFact.id]);
+                    setLearningScore(prev => prev + 5);
+                    showToast('📖 豆知識を学びました！学習スコア+5');
+                  }}
+                  className="fact-close"
+                >
+                  理解しました
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* トースト通知（画面下部に固定表示） */}
         {toastMessage && (
           <div
@@ -4995,7 +5249,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               zIndex: 1000,
               fontSize: '16px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              animation: 'fadeInOut 3s ease-in-out'
+              animation: 'fadeInOut 3s ease-in-out',
+              whiteSpace: 'pre-line'
             }}
           >
             <span>{toastMessage}</span>
