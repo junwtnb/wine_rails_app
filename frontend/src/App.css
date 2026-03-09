@@ -2232,6 +2232,155 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+/* Notifications and Events Section */
+.notifications-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  border-radius: 12px;
+  border: 1px solid #e8eaff;
+}
+
+.notifications-section h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.notification-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.notification-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.notification-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #667eea;
+}
+
+.notification-badge.recent-events {
+  background: linear-gradient(135deg, #fff3cd 0%, #fff 100%);
+  border-color: #ffc107;
+}
+
+.notification-badge.quiz-available {
+  background: linear-gradient(135deg, #d4edda 0%, #fff 100%);
+  border-color: #28a745;
+  animation: pulse 2s infinite;
+}
+
+.notification-badge.achievement-unlocked {
+  background: linear-gradient(135deg, #ffd700 0%, #fff 100%);
+  border-color: #ffc107;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.badge-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.badge-text {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.badge-count, .badge-indicator {
+  background: #667eea;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.badge-indicator {
+  background: #28a745;
+}
+
+.quick-access-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.quick-access-buttons button {
+  position: relative;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.quick-access-buttons button:hover {
+  background: #f8f9ff;
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.event-history-btn.has-recent {
+  border-color: #ffc107;
+  background: linear-gradient(135deg, #fff3cd 0%, #fff 100%);
+}
+
+.new-indicator, .achievement-indicator, .quiz-available-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #dc3545;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.achievement-indicator {
+  background: #28a745;
+}
+
+.quiz-available-indicator {
+  background: #007bff;
+}
+
+.learning-btn {
+  background: linear-gradient(135deg, #e8f5e8 0%, #fff 100%) !important;
+  border-color: #28a745 !important;
+}
+
+.learning-btn:hover {
+  background: linear-gradient(135deg, #d4edda 0%, #f8f9ff 100%) !important;
+}
+
 /* Quiz Results */
 .quiz-results {
   padding: 2rem;

@@ -3875,29 +3875,73 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             {day < 30 && <small className="migration-note">30日経過後に解禁</small>}
           </div>
 
-          {/* スタッフ管理ボタン */}
-          <div className="staff-section">
-            <button
-              onClick={() => setShowStaffPanel(true)}
-              className="staff-btn"
-              title="スタッフを雇用して作業を自動化"
-            >
-              👥 スタッフ管理 {hiredStaff.length > 0 && `(${hiredStaff.length}名)`}
-            </button>
-            <button
-              onClick={() => setShowEventHistory(true)}
-              className="event-history-btn"
-              title="発生したイベントの履歴を確認"
-            >
-              📰 イベント履歴 {eventHistory.length > 0 && `(${eventHistory.length})`}
-            </button>
-            <button
-              onClick={() => setShowAchievements(true)}
-              className="achievements-btn"
-              title="実績とタイトルを確認"
-            >
-              🏆 実績 {achievementProgress.filter(a => a.completed).length}/{ACHIEVEMENTS.length}
-            </button>
+          {/* 通知・イベント・実績セクション */}
+          <div className="notifications-section">
+            <h4>🔔 通知・イベント</h4>
+            {/* 重要な通知バッジ */}
+            <div className="notification-badges">
+              {eventHistory.length > 0 && eventHistory.slice(-3).some(e => (day - e.day) <= 2) && (
+                <div className="notification-badge recent-events" onClick={() => setShowEventHistory(true)}>
+                  <span className="badge-icon">📰</span>
+                  <span className="badge-text">新着イベント</span>
+                  <span className="badge-count">{eventHistory.filter(e => (day - e.day) <= 2).length}</span>
+                </div>
+              )}
+              {currentQuiz && !showQuizModal && (
+                <div className="notification-badge quiz-available" onClick={() => setShowLearningPanel(true)}>
+                  <span className="badge-icon">🎓</span>
+                  <span className="badge-text">学習クイズ</span>
+                  <span className="badge-indicator">NEW</span>
+                </div>
+              )}
+              {achievementProgress.filter(a => a.completed && a.unlockedDay && (day - a.unlockedDay) <= 3).length > 0 && (
+                <div className="notification-badge achievement-unlocked" onClick={() => setShowAchievements(true)}>
+                  <span className="badge-icon">🏆</span>
+                  <span className="badge-text">実績解禁</span>
+                  <span className="badge-count">{achievementProgress.filter(a => a.completed && a.unlockedDay && (day - a.unlockedDay) <= 3).length}</span>
+                </div>
+              )}
+            </div>
+            {/* クイックアクセスボタン */}
+            <div className="quick-access-buttons">
+              <button
+                onClick={() => setShowStaffPanel(true)}
+                className="staff-btn"
+                title="スタッフを雇用して作業を自動化"
+              >
+                👥 スタッフ管理 {hiredStaff.length > 0 && `(${hiredStaff.length}名)`}
+              </button>
+              <button
+                onClick={() => setShowEventHistory(true)}
+                className={`event-history-btn ${eventHistory.length > 0 && eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 ? 'has-recent' : ''}`}
+                title="発生したイベントの履歴を確認"
+              >
+                📰 イベント履歴 {eventHistory.length > 0 && `(${eventHistory.length})`}
+                {eventHistory.length > 0 && eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 && (
+                  <span className="new-indicator">NEW</span>
+                )}
+              </button>
+              <button
+                onClick={() => setShowAchievements(true)}
+                className="achievements-btn"
+                title="実績とタイトルを確認"
+              >
+                🏆 実績 {achievementProgress.filter(a => a.completed).length}/{ACHIEVEMENTS.length}
+                {achievementProgress.filter(a => a.completed && a.unlockedDay && (day - a.unlockedDay) <= 3).length > 0 && (
+                  <span className="achievement-indicator">+{achievementProgress.filter(a => a.completed && a.unlockedDay && (day - a.unlockedDay) <= 3).length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setShowLearningPanel(true)}
+                className="learning-btn"
+                title="学習クイズと豆知識"
+              >
+                🎓 学習 (スコア: {learningScore})
+                {completedQuizzes.length < LEARNING_QUIZZES.length && (
+                  <span className="quiz-available-indicator">{LEARNING_QUIZZES.length - completedQuizzes.length}</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
