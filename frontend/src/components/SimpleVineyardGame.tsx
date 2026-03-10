@@ -3880,11 +3880,11 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             <h4>🔔 通知・イベント</h4>
             {/* 重要な通知バッジ */}
             <div className="notification-badges">
-              {eventHistory.length > 0 && eventHistory.slice(-3).some(e => (day - e.day) <= 2) && (
+              {eventHistory.length > 0 && eventHistory.slice(-3).some(e => (day - e.day) <= 1) && (
                 <div className="notification-badge recent-events" onClick={() => setShowEventHistory(true)}>
                   <span className="badge-icon">📰</span>
                   <span className="badge-text">新着イベント</span>
-                  <span className="badge-count">{eventHistory.filter(e => (day - e.day) <= 2).length}</span>
+                  <span className="badge-count">{eventHistory.filter(e => (day - e.day) <= 1).length}</span>
                 </div>
               )}
               {currentQuiz && !showQuizModal && (
@@ -3911,16 +3911,18 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
               >
                 👥 スタッフ管理 {hiredStaff.length > 0 && `(${hiredStaff.length}名)`}
               </button>
-              <button
-                onClick={() => setShowEventHistory(true)}
-                className={`event-history-btn ${eventHistory.length > 0 && eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 ? 'has-recent' : ''}`}
-                title="発生したイベントの履歴を確認"
-              >
-                📰 イベント履歴 {eventHistory.length > 0 && `(${eventHistory.length})`}
-                {eventHistory.length > 0 && eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 && (
-                  <span className="new-indicator">NEW</span>
-                )}
-              </button>
+              {eventHistory.length > 0 && (
+                <button
+                  onClick={() => setShowEventHistory(true)}
+                  className={`event-history-btn ${eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 ? 'has-recent' : ''}`}
+                  title="発生したイベントの履歴を確認"
+                >
+                  📰 イベント履歴 ({eventHistory.length})
+                  {eventHistory.slice(-1)[0] && (day - eventHistory.slice(-1)[0].day) <= 1 && (
+                    <span className="new-indicator">NEW</span>
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => setShowAchievements(true)}
                 className="achievements-btn"
