@@ -2285,6 +2285,11 @@
   animation: pulse 2s infinite;
 }
 
+.notification-badge.quiz-manual {
+  background: linear-gradient(135deg, #e8f4f8 0%, #fff 100%);
+  border-color: #17a2b8;
+}
+
 .notification-badge.achievement-unlocked {
   background: linear-gradient(135deg, #ffd700 0%, #fff 100%);
   border-color: #ffc107;

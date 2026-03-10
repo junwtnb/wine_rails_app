@@ -3888,10 +3888,19 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
                 </div>
               )}
               {currentQuiz && !showQuizModal && (
-                <div className="notification-badge quiz-available" onClick={() => setShowLearningPanel(true)}>
+                <div className="notification-badge quiz-available" onClick={() => {
+                  setShowQuizModal(true);
+                }}>
                   <span className="badge-icon">🎓</span>
-                  <span className="badge-text">学習クイズ</span>
-                  <span className="badge-indicator">NEW</span>
+                  <span className="badge-text">学習クイズが利用可能</span>
+                  <span className="badge-indicator">開始</span>
+                </div>
+              )}
+              {completedQuizzes.length < LEARNING_QUIZZES.length && !currentQuiz && (
+                <div className="notification-badge quiz-manual" onClick={() => setShowLearningPanel(true)}>
+                  <span className="badge-icon">📚</span>
+                  <span className="badge-text">学習クイズ ({LEARNING_QUIZZES.length - completedQuizzes.length}問残り)</span>
+                  <span className="badge-indicator">挑戦</span>
                 </div>
               )}
               {achievementProgress.filter(a => a.completed && a.unlockedDay && (day - a.unlockedDay) <= 3).length > 0 && (
