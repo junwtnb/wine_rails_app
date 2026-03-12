@@ -342,6 +342,106 @@ const LEARNING_QUIZZES: LearningQuiz[] = [
     type: 'climate',
     difficulty: 'hard',
     reward: 250
+  },
+  {
+    id: 'grape_chardonnay',
+    question: 'シャルドネの特徴として正しいのは？',
+    options: ['赤ワイン用品種', '冷涼な気候でのみ栽培可能', '非常に適応性が高い白ワイン用品種', '病気に非常に弱い'],
+    correctAnswer: 2,
+    explanation: 'シャルドネは世界で最も栽培されている白ワイン用品種の一つで、様々な気候に適応できる柔軟性があります。ブルゴーニュからカリフォルニアまで幅広く栽培されています。',
+    type: 'grape',
+    difficulty: 'easy',
+    reward: 110
+  },
+  {
+    id: 'climate_mediterranean',
+    question: '地中海性気候でワイン作りに最適なのはなぜ？',
+    options: ['年中雨が降らない', '夏が乾燥して冬が湿潤', '年中高温', '年中低温'],
+    correctAnswer: 1,
+    explanation: '地中海性気候は夏が乾燥して暑く、冬が温暖で湿潤という特徴があり、ブドウの成熟期に雨が少ないため病気のリスクが低く、高品質なワインができやすいです。',
+    type: 'climate',
+    difficulty: 'medium',
+    reward: 170
+  },
+  {
+    id: 'disease_downy_mildew',
+    question: 'べと病の予防に最も効果的なのは？',
+    options: ['大量の水やり', '換気と湿度管理', '高温維持', '土壌の酸性化'],
+    correctAnswer: 1,
+    explanation: 'べと病は湿度が高い環境で発生しやすい真菌性病害です。適切な換気と湿度管理により予防できます。銅系の殺菌剤も効果的です。',
+    type: 'disease',
+    difficulty: 'medium',
+    reward: 190
+  },
+  {
+    id: 'terroir_soil_types',
+    question: '石灰質土壌で育ったブドウの特徴は？',
+    options: ['酸味が強い', '色が濃い', 'ミネラル感豊かで上品', '甘みが強い'],
+    correctAnswer: 2,
+    explanation: '石灰質土壌はブドウに上品なミネラル感を与え、特にシャルドネやピノ・ノワールなどの高級品種に適しています。ブルゴーニュのコート・ドールが有名です。',
+    type: 'general',
+    difficulty: 'medium',
+    reward: 180
+  },
+  {
+    id: 'viticulture_pruning',
+    question: '冬の剪定の主な目的は？',
+    options: ['病気を治療する', '収量を調整し品質を向上させる', '水やりを減らす', '成長を早める'],
+    correctAnswer: 1,
+    explanation: '冬の剪定は樹形を整え、翌年の収量を調整することで果実の品質向上を図る重要な作業です。適切な剪定により光合成効率も向上します。',
+    type: 'general',
+    difficulty: 'easy',
+    reward: 130
+  },
+  {
+    id: 'grape_cabernet_sauvignon',
+    question: 'カベルネ・ソーヴィニヨンの栽培に適した条件は？',
+    options: ['冷涼で湿潤', '温暖で日照量が多い', '極寒で乾燥', '熱帯で多雨'],
+    correctAnswer: 1,
+    explanation: 'カベルネ・ソーヴィニヨンは温暖で日照量の多い気候を好み、完全に成熟するには長い生育期間が必要です。ボルドーやナパバレーが代表的産地です。',
+    type: 'grape',
+    difficulty: 'easy',
+    reward: 120
+  },
+  {
+    id: 'climate_continental',
+    question: '大陸性気候のワイン産地の特徴は？',
+    options: ['年中温度が一定', '夏暑く冬寒い', '年中雨が多い', '年中乾燥'],
+    correctAnswer: 1,
+    explanation: '大陸性気候は夏と冬の寒暖差が激しく、日較差も大きいのが特徴です。この環境はブドウの酸味と糖度のバランスを保つのに適しています。',
+    type: 'climate',
+    difficulty: 'easy',
+    reward: 140
+  },
+  {
+    id: 'disease_black_rot',
+    question: '黒腐病が発生しやすい条件は？',
+    options: ['乾燥した環境', '高温多湿な環境', '低温乾燥な環境', '低温多湿な環境'],
+    correctAnswer: 1,
+    explanation: '黒腐病は高温多湿な条件下で発生しやすい深刻な病害で、果実を黒く腐らせてしまいます。特に梅雨時期の管理が重要です。',
+    type: 'disease',
+    difficulty: 'medium',
+    reward: 210
+  },
+  {
+    id: 'terroir_altitude',
+    question: '標高の高い畑でのブドウ栽培の利点は？',
+    options: ['病気にかからない', '日較差が大きく酸味を保てる', '収穫量が増える', '早く成熟する'],
+    correctAnswer: 1,
+    explanation: '標高が高いと日中は暖かく夜は涼しくなるため日較差が大きくなり、ブドウの酸味を保ちながら糖度を上げることができます。',
+    type: 'general',
+    difficulty: 'medium',
+    reward: 160
+  },
+  {
+    id: 'viticulture_organic',
+    question: '有機栽培（オーガニック）ワインの特徴は？',
+    options: ['化学肥料や農薬を使わない', '必ず美味しい', '値段が安い', '長期保存できない'],
+    correctAnswer: 0,
+    explanation: '有機栽培では化学合成農薬や化学肥料を使わず、自然な方法でブドウを栽培します。環境に配慮した持続可能な農業として注目されています。',
+    type: 'general',
+    difficulty: 'easy',
+    reward: 150
   }
 ];
 
