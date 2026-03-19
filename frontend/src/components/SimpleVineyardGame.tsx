@@ -2159,12 +2159,12 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     console.log('🎵 BGM and all ambient sounds stopped completely');
   }, []);
 
-  // 音楽の開始/停止
+  // 音楽の開始/停止（gameOver, gameWonを依存配列に追加して適切なクリーンアップを確保）
   useEffect(() => {
     console.log('🎵 BGM useEffect triggered - musicEnabled:', musicEnabled, 'gamePhase:', gamePhase);
     console.log('🎵 Current game state - gameOver:', gameOver, 'gameWon:', gameWon);
 
-    if (musicEnabled && (gamePhase === 'growing' || gamePhase === 'planting')) {
+    if (musicEnabled && (gamePhase === 'growing' || gamePhase === 'planting') && !gameOver && !gameWon) {
       console.log('🎵 Conditions met for BGM, starting...');
       startBackgroundMusic();
     } else {
@@ -2176,7 +2176,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       console.log('🎵 BGM useEffect cleanup');
       stopBackgroundMusic();
     };
-  }, [musicEnabled, gamePhase, startBackgroundMusic, stopBackgroundMusic]);
+  }, [musicEnabled, gamePhase, gameOver, gameWon]); // startBackgroundMusic, stopBackgroundMusicを削除して無限ループを防止
 
   // 効果音定義
   const playPlantSound = useCallback(() => playSound(440, 0.2), [playSound]);
@@ -3740,15 +3740,15 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     showToast(`🍷 「${wine.name}」をセラーから取り出しました`);
   }, [wines, showToast]);
 
-  // マネーゴールをチェック
+  // マネーゴールをチェック（updateGoalProgressはuseCallbackで安定化済み）
   React.useEffect(() => {
     updateGoalProgress('money', money);
   }, [money, updateGoalProgress]);
 
-  // ゲーム勝利をチェック
+  // ゲーム勝利をチェック（goalsの変化を監視）
   React.useEffect(() => {
     checkGameWin();
-  }, [checkGameWin]);
+  }, [checkGameWin, goals]);
 
   // ワイン熟成システム
   const calculateAgedQuality = useCallback((wine: Wine, ageInDays: number): number => {
