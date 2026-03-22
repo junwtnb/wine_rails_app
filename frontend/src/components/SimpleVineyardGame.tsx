@@ -1431,10 +1431,27 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
     climateMasteryAchievements: new Set<string>()
   });
 
-  // トースト通知を表示する関数
+  // トースト通知タイマーの参照
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ゴール完了トラッキングタイマーの参照（メモリリーク対策）
+  const goalTrackingTimers = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  // 実績報酬タイマーの参照（メモリリーク対策）
+  const achievementRewardTimers = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  // トースト通知を表示する関数（メモリリーク対策済み）
   const showToast = useCallback((message: string) => {
+    // 既存のタイマーをクリア
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000); // 3秒後に消す
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
   }, []);
 
   // 学習クイズの生成と表示
@@ -1542,8 +1559,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
             newProgress.completed = true;
             newProgress.unlockedDay = day;
 
-            // 実績解除処理
-            setTimeout(() => unlockAchievement(achievement), 100);
+            // 実績解除処理（即座に実行、setTimeoutの必要性なし）
+            unlockAchievement(achievement);
           }
         }
 
@@ -1584,20 +1601,24 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
 
     showToast(`${tierEmoji} 実績解除: ${achievement.name}！`);
 
-    // 報酬のトースト
+    // 報酬のトースト（メモリリーク対策）
     if (achievement.reward.money) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         showToast(`💰 報酬: ${achievement.reward.money}円を獲得！`);
+        achievementRewardTimers.current.delete(timer);
       }, 1500);
+      achievementRewardTimers.current.add(timer);
     }
 
     if (achievement.reward.title) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         const title = PLAYER_TITLES.find(t => t.id === achievement.reward.title);
         if (title) {
           showToast(`🏷️ 新しいタイトル「${title.name}」を獲得！`);
         }
+        achievementRewardTimers.current.delete(timer);
       }, 3000);
+      achievementRewardTimers.current.add(timer);
     }
   }, [showToast]);
 
@@ -2177,6 +2198,34 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       stopBackgroundMusic();
     };
   }, [musicEnabled, gamePhase, gameOver, gameWon]); // startBackgroundMusic, stopBackgroundMusicを削除して無限ループを防止
+
+  // コンポーネントのアンマウント時のクリーンアップ
+  useEffect(() => {
+    return () => {
+      // トーストタイマーをクリア
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+
+      // ゴールトラッキングタイマーをすべてクリア
+      goalTrackingTimers.current.forEach(timer => {
+        clearTimeout(timer);
+      });
+      goalTrackingTimers.current.clear();
+
+      // 実績報酬タイマーをすべてクリア
+      achievementRewardTimers.current.forEach(timer => {
+        clearTimeout(timer);
+      });
+      achievementRewardTimers.current.clear();
+
+      // 音楽と音声を停止
+      stopBackgroundMusic();
+
+      // その他のタイマーのクリーンアップは各useEffectのreturnで処理済み
+      console.log('🧹 SimpleVineyardGame component cleanup completed');
+    };
+  }, []); // 空の依存配列でアンマウント時のみ実行
 
   // 効果音定義
   const playPlantSound = useCallback(() => playSound(440, 0.2), [playSound]);
@@ -2928,14 +2977,16 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
           // 重複通知を防ぐためにゴールをトラッキング
           setRecentlyCompletedGoals(prevSet => new Set(prevSet).add(goal.title));
 
-          // 5秒後にトラッキングをクリア
-          setTimeout(() => {
+          // 5秒後にトラッキングをクリア（メモリリーク対策）
+          const timer = setTimeout(() => {
             setRecentlyCompletedGoals(prevSet => {
               const newSet = new Set(prevSet);
               newSet.delete(goal.title);
               return newSet;
             });
+            goalTrackingTimers.current.delete(timer);
           }, 5000);
+          goalTrackingTimers.current.add(timer);
         }
 
         return { ...goal, current: newCurrent, completed };
