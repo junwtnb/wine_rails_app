@@ -227,11 +227,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dispatch({
           type: 'LOAD_FROM_STORAGE',
           payload: {
-            searchHistory: searchHistory.map((item: any) => ({
+            searchHistory: searchHistory.map((item: Omit<SearchHistoryItem, 'timestamp'> & { timestamp: string }) => ({
               ...item,
               timestamp: new Date(item.timestamp)
             })),
-            favoriteWines: favoriteWines.map((item: any) => ({
+            favoriteWines: favoriteWines.map((item: Omit<FavoriteWine, 'addedAt'> & { addedAt: string }) => ({
               ...item,
               addedAt: new Date(item.addedAt)
             })),

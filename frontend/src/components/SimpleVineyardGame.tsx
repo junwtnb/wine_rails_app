@@ -190,7 +190,7 @@ interface RandomEvent {
   };
   season?: string; // 特定の季節でのみ発生 (オプション)
   oneTimeOnly?: boolean; // 一回限りのイベント
-  condition?: (gameState: any) => boolean; // 発生条件
+  condition?: (gameState: GameStateForConditions) => boolean; // 発生条件
 }
 
 interface ActiveEvent {
@@ -210,7 +210,7 @@ interface Achievement {
   requirements: {
     type: string;
     target: number;
-    condition?: (gameState: any) => boolean;
+    condition?: (gameState: any) => boolean; // 実績システムではgameStatsやadditionalDataなど様々な形式
   }[];
   reward: {
     money?: number;
@@ -257,6 +257,37 @@ interface LearningFact {
 
 interface SimpleVineyardGameProps {
   onClose: () => void;
+}
+
+// ゲーム状態の型（イベント条件判定用）
+interface GameStateForConditions {
+  day: number;
+  money: number;
+  currentSeasonIndex: number;
+  currentSeason: {
+    name: string;
+    emoji: string;
+    name_jp: string;
+    growthBonus: number;
+    plantingOptimal: boolean;
+    harvestPossible: boolean;
+  };
+  wines: Array<{
+    quality: number;
+    isSpecial?: boolean;
+    age?: number;
+  }>;
+  plots: Array<{
+    isPlanted: boolean;
+    grapeType?: string;
+    health: number;
+  }>;
+  vineyardUpgrades: {
+    irrigationSystem: number;
+    soilQuality: number;
+    weatherProtection: number;
+    pruningTechnique: number;
+  };
 }
 
 const DISEASES: Disease[] = [
@@ -759,7 +790,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     effects: {
       duration: 14
     },
-    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 80)
+    condition: (gameState) => gameState.wines.some(w => w.quality >= 80)
   },
 
   // 来客関連イベント
@@ -802,7 +833,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
       duration: 30
     },
     oneTimeOnly: true,
-    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 90) && gameState.day >= 100
+    condition: (gameState) => gameState.wines.some(w => w.quality >= 90) && gameState.day >= 100
   },
 
   // ニュース関連イベント
@@ -819,7 +850,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
       duration: 45
     },
     oneTimeOnly: true,
-    condition: (gameState) => gameState.wines.some((w: any) => w.quality >= 85)
+    condition: (gameState) => gameState.wines.some(w => w.quality >= 85)
   },
   {
     id: 'government_subsidy',
@@ -1502,7 +1533,7 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
   }, [currentFact, showToast]);
 
   // 実績処理関数
-  const updateAchievementProgress = useCallback((type: string, value: number, additionalData?: any) => {
+  const updateAchievementProgress = useCallback((type: string, value: number, additionalData?: Record<string, unknown>) => {
     setAchievementProgress(prev => {
       const updated = prev.map(progress => {
         const achievement = ACHIEVEMENTS.find(a => a.id === progress.achievementId);
@@ -1634,7 +1665,8 @@ const SimpleVineyardGame: React.FC<SimpleVineyardGameProps> = ({ onClose }) => {
       wines,
       plots,
       currentSeasonIndex,
-      currentSeason
+      currentSeason,
+      vineyardUpgrades
     };
 
     for (const event of RANDOM_EVENTS) {

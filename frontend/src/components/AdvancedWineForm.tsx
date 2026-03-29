@@ -70,9 +70,9 @@ type WineFormAction =
   | { type: 'CLEAR_ALL_ERRORS' }
   | { type: 'UPDATE_BASIC_INFO'; field: keyof WineFormState['basicInfo']; value: string }
   | { type: 'UPDATE_APPEARANCE'; field: keyof WineFormState['tastingNotes']['appearance']; value: string }
-  | { type: 'UPDATE_AROMA'; field: keyof WineFormState['tastingNotes']['aroma']; value: any }
+  | { type: 'UPDATE_AROMA'; field: keyof WineFormState['tastingNotes']['aroma']; value: string | string[] }
   | { type: 'UPDATE_TASTE'; field: keyof WineFormState['tastingNotes']['taste']; value: string }
-  | { type: 'UPDATE_RATING'; field: keyof WineFormState['rating']; value: any }
+  | { type: 'UPDATE_RATING'; field: keyof WineFormState['rating']; value: number | boolean | string | string[] }
   | { type: 'ADD_AROMA_CHARACTERISTIC'; characteristic: string }
   | { type: 'REMOVE_AROMA_CHARACTERISTIC'; characteristic: string }
   | { type: 'ADD_FOOD_PAIRING'; pairing: string }

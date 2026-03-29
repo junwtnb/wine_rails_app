@@ -137,7 +137,49 @@ function AppContent() {
     dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: null });
   };
 
-  const handleAdvancedFormSubmit = async (formData: any) => {
+  // AdvancedWineFormの型定義をimport
+  interface AdvancedWineFormData {
+    basicInfo: {
+      name: string;
+      winery: string;
+      vintage: string;
+      region: string;
+      country: string;
+      type: 'red' | 'white' | 'rose' | 'sparkling' | 'dessert' | '';
+      price: string;
+    };
+    tastingNotes: {
+      appearance: {
+        color: string;
+        clarity: 'brilliant' | 'clear' | 'hazy' | '';
+        intensity: 'light' | 'medium' | 'deep' | '';
+      };
+      aroma: {
+        intensity: 'light' | 'medium' | 'pronounced' | '';
+        characteristics: string[];
+        notes: string;
+      };
+      taste: {
+        sweetness: 'bone-dry' | 'dry' | 'off-dry' | 'medium-sweet' | 'sweet' | '';
+        acidity: 'low' | 'medium-' | 'medium' | 'medium+' | 'high' | '';
+        tannin: 'low' | 'medium-' | 'medium' | 'medium+' | 'high' | '';
+        body: 'light' | 'medium-' | 'medium' | 'medium+' | 'full' | '';
+        alcohol: 'low' | 'medium' | 'high' | '';
+        flavor: string;
+        finish: 'short' | 'medium' | 'long' | '';
+      };
+    };
+    rating: {
+      overall: number;
+      value: number;
+      drinkNow: boolean;
+      ageingPotential: 'drink-now' | '1-3-years' | '3-5-years' | '5-10-years' | '10+-years' | '';
+      foodPairing: string[];
+      personalNotes: string;
+    };
+  }
+
+  const handleAdvancedFormSubmit = async (formData: AdvancedWineFormData) => {
     try {
       // APIへの送信処理をここに実装
       console.log('Advanced Wine Form submitted:', formData);
